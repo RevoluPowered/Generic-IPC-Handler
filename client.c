@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 
    /* Create local socket. */
 
-   data_socket = socket(AF_UNIX, SOCK_SEQPACKET, 0);
+   data_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
    if (data_socket == -1) {
        perror("socket");
        exit(EXIT_FAILURE);
@@ -38,13 +38,6 @@ int main(int argc, char *argv[])
 
    addr.sun_family = AF_UNIX;
    strncpy(addr.sun_path, SOCKET_NAME, sizeof(addr.sun_path) - 1);
-
-   ret = connect(data_socket, (const struct sockaddr *) &addr,
-		  sizeof(addr));
-   if (ret == -1) {
-       fprintf(stderr, "The server is down.\n");
-       exit(EXIT_FAILURE);
-   }
 
    /* Send arguments. */
 

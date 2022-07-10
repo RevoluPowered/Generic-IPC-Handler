@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 
    /* Create local socket. */
 
-   connection_socket = socket(AF_UNIX, SOCK_SEQPACKET, 0);
+   connection_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
    if (connection_socket == -1) {
        perror("socket");
        exit(EXIT_FAILURE);
@@ -55,80 +55,51 @@ int main(int argc, char *argv[])
        exit(EXIT_FAILURE);
    }
 
-   /*
-    * Prepare for accepting connections. The backlog size is set
-    * to 20. So while one request is being processed other requests
-    * can be waiting.
-    */
+   /* This is the main loop for handling connections. */
+   /* Wait for incoming connection. */
+   result = 0;
+   for (;;) {
 
-   ret = listen(connection_socket, 20);
+   /* Wait for next data packet. */
+
+   ret = read(data_socket, buffer, sizeof(buffer));
    if (ret == -1) {
-       perror("listen");
+       perror("read");
        exit(EXIT_FAILURE);
    }
 
-   /* This is the main loop for handling connections. */
+   /* Ensure buffer is 0-terminated. */
 
-   for (;;) {
+   buffer[sizeof(buffer) - 1] = 0;
 
-       /* Wait for incoming connection. */
+   /* Handle commands. */
 
-       data_socket = accept(connection_socket, NULL, NULL);
-       if (data_socket == -1) {
-	   perror("accept");
-	   exit(EXIT_FAILURE);
-       }
-
-       result = 0;
-       for (;;) {
-
-	   /* Wait for next data packet. */
-
-	   ret = read(data_socket, buffer, sizeof(buffer));
-	   if (ret == -1) {
-	       perror("read");
-	       exit(EXIT_FAILURE);
-	   }
-
-	   /* Ensure buffer is 0-terminated. */
-
-	   buffer[sizeof(buffer) - 1] = 0;
-
-	   /* Handle commands. */
-
-	   if (!strncmp(buffer, "DOWN", sizeof(buffer))) {
-	       down_flag = 1;
-	       break;
-	   }
-
-	   if (!strncmp(buffer, "END", sizeof(buffer))) {
-	       break;
-	   }
-
-	   /* Add received summand. */
-
-	   result += atoi(buffer);
-       }
-
-       /* Send result. */
-
-       sprintf(buffer, "%d", result);
-       ret = write(data_socket, buffer, sizeof(buffer));
-       if (ret == -1) {
-	   perror("write");
-	   exit(EXIT_FAILURE);
-       }
-
-       /* Close socket. */
-
-       close(data_socket);
-
-       /* Quit on DOWN command. */
-
-       if (down_flag) {
-	   break;
-       }
+   if (!strncmp(buffer, "DOWN", sizeof(buffer))) {
+       down_flag = 1;
+       break;
    }
+
+   if (!strncmp(buffer, "END", sizeof(buffer))) {
+       break;
+   }
+
+   /* Add received summand. */
+
+   result += atoi(buffer);
+   }
+
+   /* Send result. */
+
+   sprintf(buffer, "%d", result);
+   ret = write(data_socket, buffer, sizeof(buffer));
+   if (ret == -1) {
+   perror("write");
+   exit(EXIT_FAILURE);
+   }
+
+   /* Close socket. */
+
+   close(data_socket);
 
    close(connection_socket);
 
