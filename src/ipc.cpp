@@ -1,8 +1,17 @@
-#include "IPC.h"
+#include "ipc.h"
 
 IPCBase::IPCBase(){}
 IPCBase::~IPCBase(){}
-IPCBase::add_receive_callback( CallbackDefinition callback )
+
+IPCClient::IPCClient(){}
+IPCClient::~IPCClient(){}
+
+IPCServer::IPCServer(){}
+IPCServer::~IPCServer(){}
+
+
+// called to register the only callback for when data arrives
+void IPCBase::add_receive_callback( CallbackDefinition callback )
 {
     // func pointer to func pointer.
     activeCallback = callback;
@@ -23,7 +32,7 @@ void IPCClient::setup()
     name.sun_family = AF_UNIX;
     strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
 
-    int OK = connect(data_socket, (const struct socketaddr *) &addr, sizeof(addr));
+    int OK = connect(data_socket, (const struct sockaddr *) &name, sizeof(name));
     if(OK == -1)
     {
         return;
@@ -50,7 +59,7 @@ void IPCServer::setup()
     name.sun_family = AF_UNIX;
     strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
 
-    int OK = bind(connection_socket, &name, sizeof(name));
+    int OK = bind(connection_socket, (const struct sockaddr *) &name,sizeof(name));
     if (OK == -1) {
         return;
     }
@@ -64,10 +73,12 @@ void IPCServer::setup()
 /* We process and read the buffer once per tick */
 void IPCServer::poll()
 {
+    // server only
     data_socket = accept(connection_socket, NULL, NULL);
     if( data_socket == -1 ){
         return; // do nothing.
     }
+    // end server only.
     
     int OK = read(data_socket, buffer, sizeof(buffer));
     if(OK == -1){
@@ -83,11 +94,10 @@ void IPCServer::poll()
         activeCallback(buffer, sizeof(buffer));
     }
 
-    /* Zero buffer */
-    buffer = {0};
+    /* buffer reply means we got the message */
+    OK = write(data_socket, buffer, sizeof(buffer));
 
-    /* Zero buffer reply means we got the message */
-    OK = write(data_socket, buffer, sizeof(buffer);
+    buffer[sizeof(buffer) -1] = 0;
 
     close(connection_socket);
     unlink(SOCKET_NAME);

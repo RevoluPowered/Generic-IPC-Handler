@@ -13,7 +13,7 @@
  *   We'd like to make this connectionless would be easier code wise.
  */
 
-using CallbackDefinition = void (*)(int /*strlen*/, const char * /* string data received */);
+using CallbackDefinition = void (*)(const char * /* string data received */, int /*strlen */);
 #define BufferSize 256
 #define SOCKET_NAME "/tmp/godot_socket_test"
 
@@ -25,12 +25,12 @@ class IPCBase
     int connection_socket = -1;
     // last char is always null, preventing reading more than buffer size.
     char buffer[BufferSize] = {0};
-	public:
+    int data_socket = -1;
+    public:
     IPCBase();
     virtual ~IPCBase();
 	virtual void setup() = 0; // setup is always different
     virtual void poll() = 0;
-	virtual void send( int strlen, const char * string_to_send );
 	virtual void add_receive_callback( CallbackDefinition callback );
 };
 
@@ -45,9 +45,8 @@ class IPCClient : public IPCBase
 
 class IPCServer : public IPCBase
 {
-    protected:
-    int data_socket = -1;
     public:
+    IPCServer();
     virtual ~IPCServer();
     void setup();
     void poll();
