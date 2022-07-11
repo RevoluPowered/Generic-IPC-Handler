@@ -12,12 +12,16 @@ int main() {
     server.add_receive_callback(&Receive);
     IPCClient client;
     client.add_receive_callback(&Receive);
-    if( server.setup() && client.setup() )
+    if( server.setup() )
     {
-        while(true)
+        server.poll();
+        if(client.setup())
         {
-            server.poll();
-            client.poll();
+            while(true)
+            {
+                server.poll();
+                client.poll();
+            }
         }
     }
     return 0;

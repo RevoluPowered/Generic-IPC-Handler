@@ -22,7 +22,7 @@ bool IPCClient::setup()
     // Hello world MacOS return point. ;)
     connection_socket = socket(AF_UNIX, SOCK_SEQPACKET, 0);
     if(connection_socket == -1) {
-        perror("socket");
+        perror("client socket");
         return true;
     }
 
@@ -36,7 +36,7 @@ bool IPCClient::setup()
     int OK = connect(data_socket, (const struct sockaddr *) &name, sizeof(name));
     if(OK == -1)
     {
-        perror("connect");
+        perror("client connect");
         return false;
     }
 
@@ -60,6 +60,7 @@ bool IPCClient::poll()
 
 bool IPCServer::setup()
 {
+    unlink(SOCKET_NAME);
     // Hello world MacOS return point. ;)
     connection_socket = socket(AF_UNIX, SOCK_SEQPACKET, 0);
     if(connection_socket == -1) {
