@@ -10,19 +10,9 @@ void Receive( const char * string, int strlen )
 int main() {
     IPCServer server;
     server.add_receive_callback(&Receive);
-    IPCClient client;
-    client.add_receive_callback(&Receive);
     if( server.setup() )
     {
         server.poll();
-        if(client.setup())
-        {
-            while(true)
-            {
-                server.poll();
-                client.poll();
-            }
-        }
     }
     return 0;
 }
