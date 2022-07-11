@@ -17,12 +17,13 @@ void IPCBase::add_receive_callback( CallbackDefinition callback )
     activeCallback = callback;
 }
 
-void IPCClient::setup()
+bool IPCClient::setup()
 {
     // Hello world MacOS return point. ;)
     connection_socket = socket(AF_UNIX, SOCK_SEQPACKET, 0);
     if(connection_socket == -1) {
-        return;
+        perror("socket");
+        return true;
     }
 
     /* Ensure portable by resetting all to zero */
@@ -35,21 +36,34 @@ void IPCClient::setup()
     int OK = connect(data_socket, (const struct sockaddr *) &name, sizeof(name));
     if(OK == -1)
     {
-        return;
+        perror("connect");
+        return false;
     }
+
+    return true;
 }
 
-void IPCClient::poll()
+bool IPCClient::poll()
 {
     // unlikely to be used as (right now) later if we need a backward pipe.
+    const char str[] = "Hello World from the Client!\0";
+    
+    int OK = write(data_socket, str, sizeof(str));
+    if(OK == -1)
+    {
+       perror("write");
+       return false; 
+    }
+
+    return true;
 }
 
-void IPCServer::setup()
+bool IPCServer::setup()
 {
     // Hello world MacOS return point. ;)
     connection_socket = socket(AF_UNIX, SOCK_SEQPACKET, 0);
     if(connection_socket == -1) {
-        return;
+        return false;
     }
 
     /* Ensure portable by resetting all to zero */
@@ -61,28 +75,33 @@ void IPCServer::setup()
 
     int OK = bind(connection_socket, (const struct sockaddr *) &name,sizeof(name));
     if (OK == -1) {
-        return;
+        perror("bind");
+        return false;
     }
 
     OK = listen(connection_socket, 32); // assume spamming of new connections
     if (OK == -1) {
-        return;
+        perror("listen");
+        return false;
     }
+    return true;
 }
 
 /* We process and read the buffer once per tick */
-void IPCServer::poll()
+bool IPCServer::poll()
 {
     // server only
     data_socket = accept(connection_socket, NULL, NULL);
     if( data_socket == -1 ){
-        return; // do nothing.
+        perror("socket accept");
+        return false; // do nothing.
     }
     // end server only.
     
     int OK = read(data_socket, buffer, sizeof(buffer));
     if(OK == -1){
-        return;
+        perror("server read");
+        return false;
     }
 
     /* Buffer must be null terminated */
@@ -101,4 +120,5 @@ void IPCServer::poll()
 
     close(connection_socket);
     unlink(SOCKET_NAME);
+    return true;
 }

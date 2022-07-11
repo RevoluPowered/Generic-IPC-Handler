@@ -15,7 +15,7 @@
 
 using CallbackDefinition = void (*)(const char * /* string data received */, int /*strlen */);
 #define BufferSize 256
-#define SOCKET_NAME "/tmp/godot_socket_test"
+#define SOCKET_NAME "/tmp/godot_soocket_test"
 
 class IPCBase 
 {
@@ -29,8 +29,8 @@ class IPCBase
     public:
     IPCBase();
     virtual ~IPCBase();
-	virtual void setup() = 0; // setup is always different
-    virtual void poll() = 0;
+	virtual bool setup() = 0; // setup is always different
+    virtual bool poll() = 0;
 	virtual void add_receive_callback( CallbackDefinition callback );
 };
 
@@ -39,8 +39,9 @@ class IPCClient : public IPCBase
 	public:
 	IPCClient();
 	virtual ~IPCClient();
-    void setup();
-    void poll();
+    bool setup();
+    bool poll();
+
 };
 
 class IPCServer : public IPCBase
@@ -48,7 +49,7 @@ class IPCServer : public IPCBase
     public:
     IPCServer();
     virtual ~IPCServer();
-    void setup();
-    void poll();
+    bool setup();
+    bool poll();
 };
 
