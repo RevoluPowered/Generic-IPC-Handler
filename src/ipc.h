@@ -15,14 +15,13 @@
 
 using CallbackDefinition = void (*)(const char * /* string data received */, int /*strlen */);
 #define BufferSize 256
-#define SOCKET_NAME "/tmp/godot_soocket_test"
+#define SOCKET_NAME "/tmp/som74yhe.socket"
 
 class IPCBase 
 {
     protected:
     CallbackDefinition activeCallback = nullptr;
-    struct sockaddr_un name; 
-    int connection_socket = -1;
+    struct sockaddr_un name;
     // last char is always null, preventing reading more than buffer size.
     char buffer[BufferSize] = {0};
     int data_socket = -1;
@@ -46,6 +45,8 @@ class IPCClient : public IPCBase
 
 class IPCServer : public IPCBase
 {
+    // server has more than one handle here
+    int connection_socket = -1;
     public:
     IPCServer();
     virtual ~IPCServer();

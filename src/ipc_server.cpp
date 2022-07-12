@@ -9,10 +9,14 @@ void Receive( const char * string, int strlen )
 
 int main() {
     IPCServer server;
+    printf("Starting server\n");
     server.add_receive_callback(&Receive);
     if( server.setup() )
     {
-        server.poll();
+        printf("Server setup completed, starting polling\n");
+        while( server.poll() ){
+            // do nothing
+        };
     }
     return 0;
 }

@@ -1,10 +1,3 @@
- /*
-* File connection.h
-*/
-
-#define SOCKET_NAME "/tmp/9Lq7BNBnBycd6nxy.socket"
-#define BUFFER_SIZE 12
-
 /*
 * File server.c
 */
@@ -28,7 +21,7 @@ int main(int argc, char *argv[])
    char buffer[BUFFER_SIZE];
 
    /* Create local socket. */
-
+   unlink(SOCKET_NAME);
    connection_socket = socket(AF_UNIX, SOCK_SEQPACKET, 0);
    if (connection_socket == -1) {
        perror("socket");

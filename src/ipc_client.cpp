@@ -12,7 +12,7 @@ int main() {
     client.add_receive_callback(&Receive);
     if(client.setup())
     {
-        client.poll(); 
+        client.poll();
     }
     return 0;
 }
