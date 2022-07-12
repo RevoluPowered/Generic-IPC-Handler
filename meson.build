@@ -3,14 +3,25 @@ project('file_socket','c', 'cpp',
 
 incdir = include_directories('src')
 
-sources = [ 
+sources_serv = [ 
   'src/ipc.cpp',
-  'src/test_library.cpp'
+  'src/ipc_server.cpp'
 ]
 
-executable('test_library', 
-  sources,
+sources_client = [
+  'src/ipc.cpp',
+  'src/ipc_client.cpp'
+]
+
+executable('ipc_server', 
+  sources_serv,
   include_directories: incdir)
+
+
+executable('ipc_client', 
+  sources_client,
+  include_directories: incdir)
+
 
 # sample code from docs
 executable('example_socket_server', 'example/server.c')
