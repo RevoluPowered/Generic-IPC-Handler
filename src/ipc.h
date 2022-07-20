@@ -1,9 +1,13 @@
+#ifndef AF_UNIX_IPC_INCLUDE
+#define AF_UNIX_IPC_INCLUDE
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 
@@ -39,8 +43,9 @@ class IPCClient : public IPCBase
 	IPCClient();
 	virtual ~IPCClient();
     bool setup();
+	bool setup_one_shot( const char *str, int n );
     bool poll();
-
+	void send_message( const char * str, int n /* length */);
 };
 
 class IPCServer : public IPCBase
@@ -54,3 +59,4 @@ class IPCServer : public IPCBase
     bool poll();
 };
 
+#endif // AF_UNIX_IPC_INCLUDE
