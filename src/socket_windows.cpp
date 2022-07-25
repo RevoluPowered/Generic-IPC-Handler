@@ -1,0 +1,19 @@
+static int initialize(){
+    WSADATA wsaData;
+    int err = WSAStartup(MakeWord(2,2), &wsaData);
+    if(err != 0)
+    {
+        printf("WSAStartup Failed: %d", err);
+        return -1;
+    }
+
+}
+static int finalize(){
+    WSACleanup();
+}
+
+static bool set_non_blocking( int socket_handle )
+{
+    unsigned long enable_non_blocking = 1;
+    return ioctlsocket(fd, FIONBIO, &enable_non_blocking ) == 0;
+}

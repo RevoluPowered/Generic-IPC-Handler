@@ -3,12 +3,14 @@ project('file_socket','c', 'cpp',
 
 incdir = include_directories('src')
 
-sources_serv = [ 
+sources_serv = [
+  'src/socket_posix.cpp',
   'src/ipc.cpp',
   'src/ipc_server.cpp'
 ]
 
 sources_client = [
+  'src/socket_posix.cpp',
   'src/ipc.cpp',
   'src/ipc_client.cpp'
 ]

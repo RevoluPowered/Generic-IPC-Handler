@@ -1,19 +1,6 @@
 #include "ipc.h"
 
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <mswsock.h>
-#include <afunix.h>
-#define CLOSE_SOCKET closesocket
-#else
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <unistd.h>
-#define CLOSE_SOCKET close
-#endif // _WIN32
+#include "linux_socket.h"
 
 IPCBase::IPCBase(){}
 IPCBase::~IPCBase(){}
@@ -59,7 +46,7 @@ bool IPCClient::setup()
 
 	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
 
-	OK = recv(data_socket, buffer, BufferSize);
+	OK = PosixSocket::recv(data_socket, buffer, BufferSize);
 	if(OK == -1)
 	{
 		perror("read client socket");
