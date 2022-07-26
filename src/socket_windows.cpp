@@ -51,59 +51,52 @@ int SocketImplementation::create_af_unix_socket(
 */
 int SocketImplementation::set_non_blocking( int socket_handle )
 {
-    return -1;
+    unsigned long enable_non_blocking = 1;
+    return ioctlsocket(socket_handle, FIONBIO, &enable_non_blocking ) == 0;
 }
 int SocketImplementation::connect( int socket_handle, const struct sockaddr *address, socklen_t address_len )
 {
-    return -1;
+    return ::connect(socket_handle, address, address_len);
 }
 int SocketImplementation::send( int socket_handle, const char * msg, size_t len)
 {
-    return -1;
+    return ::send(socket_handle, msg, len, 0) == SOCKET_ERROR ? -1 : 0;
 }
 int SocketImplementation::recv( int socket_handle, char * buffer, size_t bufferSize )
 {
-    return -1;
+    return ::recv(socket_handle, buffer, bufferSize, 0);
 }
 int SocketImplementation::poll( int socket_handle )
 {
     return -1;
+//    struct pollfd pfd;
+//    pfd.fd = socket_handle;
+//    pfd.events = POLLIN | POLLOUT;
+//    pfd.revents = 0;
+//    return ::WSaPoll(&pfd, 1, 0);
+//    //return ::pollfd()
 }
 int SocketImplementation::accept( int socket_handle, struct sockaddr *addr, socklen_t * addrlen)
 {
-    return -1;
+    return ::accept(socket_handle, addr, addrlen);
 }
 int SocketImplementation::bind( int socket_handle, const struct sockaddr *addr, size_t len)
 {
-    return -1;
+    return ::bind(socket_handle, addr, len);
 }
 int SocketImplementation::listen( int socket_handle, int connection_pool_size)
 {
-    return -1;
+    return ::listen(socket_handle, connection_pool_size);
 }
 void SocketImplementation::close( int socket_handle )
 {
-
+    ::closesocket(socket_handle);
 }
 void SocketImplementation::unlink( const char * unlink_file )
 {
-
+    _unlink(unlink_file);
 }
 
-//static int initialize(){
-//    WSADATA wsaData;
-//    int err = WSAStartup(MakeWord(2,2), &wsaData);
-//    if(err != 0)
-//    {
-//        printf("WSAStartup Failed: %d", err);
-//        return -1;
-//    }
-//
-//}
-//static int finalize(){
-//    WSACleanup();
-//}
-//
 //static bool set_non_blocking( int socket_handle )
 //{
 //    unsigned long enable_non_blocking = 1;
