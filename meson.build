@@ -1,15 +1,19 @@
 project('file_socket','c', 'cpp', 
-  default_options : ['c_std=c11' , 'cpp_std=c++11'] )
+  default_options : ['c_std=c11' , 'cpp_std=c++11', 'default_library=static'] )
 
 incdir = include_directories('src')
+compiler = meson.get_compiler('cpp')
+ws2dep = compiler.find_library('ws2_32', required : true)
 
 sources_serv = [
+  'src/socket_windows.cpp',
   'src/socket_posix.cpp',
   'src/ipc.cpp',
   'src/ipc_server.cpp'
 ]
 
 sources_client = [
+  'src/socket_windows.cpp',
   'src/socket_posix.cpp',
   'src/ipc.cpp',
   'src/ipc_client.cpp'
@@ -17,15 +21,12 @@ sources_client = [
 
 executable('ipc_server', 
   sources_serv,
-  include_directories: incdir)
+  include_directories: incdir,
+  dependencies: ws2dep)
 
 
 executable('ipc_client', 
   sources_client,
-  include_directories: incdir)
-
-
-# sample code from docs
-executable('example_socket_server', 'example/server.c')
-executable('example_socket_client', 'example/client.c')
+  include_directories: incdir,
+  dependencies: ws2dep)
 

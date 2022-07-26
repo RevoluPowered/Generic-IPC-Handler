@@ -2,7 +2,14 @@
 #define GENERIC_IPC_HANDLER_SOCKET_IMPLEMENTATION_H
 
 #include <stddef.h>
-#include <sys/socket.h>
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <stdio.h>
 
 struct SocketImplementation
 {

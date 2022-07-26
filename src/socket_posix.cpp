@@ -1,4 +1,5 @@
 #include "socket_implementation.h"
+#ifndef _WIN32
 
 /* Creating AF Unix socket the entire point */
 #include <sys/socket.h>
@@ -95,3 +96,5 @@ void SocketImplementation::close(int socket_handle) {
 void SocketImplementation::unlink(const char *unlink_file) {
     ::unlink(unlink_file);
 }
+
+#endif
