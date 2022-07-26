@@ -24,7 +24,7 @@
 
 using CallbackDefinition = void (*)(const char * /* string data received */, int /*strlen */);
 #define BufferSize 256
-#define SOCKET_NAME "/tmp/som74yhe.socket"
+#define SOCKET_NAME "c:/temp/som74yhe.socket"
 
 
 
