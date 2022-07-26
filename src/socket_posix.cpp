@@ -1,23 +1,37 @@
 #include "socket_implementation.h"
 
 /* Creating AF Unix socket the entire point */
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int SocketImplementation::create_af_unix_socket( const char * file_path, int n )
+int SocketImplementation::create_af_unix_socket(
+        struct sockaddr_un& name,
+        const char * file_path )
 {
     const int socket_id = socket(AF_UNIX, SOCK_STREAM, 0);
     if(socket_id == -1) {
         perror("client socket");
         return -1;
     }
-
     /* Ensure portable by resetting all to zero */
     memset(&name, 0, sizeof(name));
 
     /* AF_UNIX */
     name.sun_family = AF_UNIX;
-    strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
+    strncpy(name.sun_path, file_path, sizeof(name.sun_path) - 1);
 
     return socket_id;
+}
+
+int SocketImplementation::set_non_blocking(int socket_handle) {
+    int flags = fcntl(socket_handle, F_GETFD );
+    return fcntl(socket_handle, F_SETFD, flags | O_NONBLOCK);
 }
 
 /* A poll method where you don't need the manual
@@ -41,26 +55,27 @@ int SocketImplementation::poll( int socket_handle )
  * a total loss.
  */
 
-bool SocketImplementation::connect( int socket_handle,
-                           const struct socketaddr * name, size_t name_length )
+int SocketImplementation::connect( int socket_handle, const struct sockaddr *address, socklen_t address_len )
 {
-    return ::connect(data_socket, &name, sizeof(name)) != -1;
+    return ::connect(socket_handle, address, address_len);
 }
 
-bool SocketImplementation::send( int socket_handle, const char * msg, size_t len )
+int SocketImplementation::send( int socket_handle, const char * msg, size_t len )
 {
-    return ::send(data_socket, msg, len, MSG_DONTWAIT) != -1;
+    return ::send(socket_handle, msg, len, MSG_DONTWAIT);
 }
 
-bool SocketImplementation::recv( int socket_handle, char * buffer, size_t& len )
+int SocketImplementation::recv( int socket_handle, char * buffer, size_t& len )
 {
-    return ::recv(socket_handle, buffer, len, MSG_DONTWAIT) != -1;
+    return ::recv(socket_handle, buffer, len, MSG_DONTWAIT);
 }
 
-int SocketImplementation::accept( int socket_handle,
-                         const struct sockaddr *addr, size_t len)
+int SocketImplementation::accept(
+        int socket_handle,
+        struct sockaddr *addr,
+        socklen_t * addrlen )
 {
-    return ::accept(socket_handle, addr, len);
+    return ::accept(socket_handle, addr, addrlen);
 }
 
 int SocketImplementation::bind( int socket_handle, const struct sockaddr *addr, size_t len)
@@ -75,4 +90,8 @@ int SocketImplementation::listen( int socket_handle, int connection_pool_size )
 
 void SocketImplementation::close(int socket_handle) {
     ::close(socket_handle);
+}
+
+void SocketImplementation::unlink(const char *unlink_file) {
+    ::unlink(unlink_file);
 }

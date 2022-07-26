@@ -1,19 +1,18 @@
 #include "ipc.h"
 
-#include "linux_socket.h"
+#include "socket_implementation.h"
 
 IPCBase::IPCBase(){}
 IPCBase::~IPCBase(){}
 
 IPCClient::IPCClient(){}
 IPCClient::~IPCClient(){
-    CLOSE_SOCKET(data_socket);
+    SocketImplementation::close(data_socket);
 }
 
 IPCServer::IPCServer(){}
 IPCServer::~IPCServer(){
-    CLOSE_SOCKET(connection_socket);
-    unlink(SOCKET_NAME);
+    SocketImplementation::close(connection_socket);
 }
 
 // called to register the only callback for when data arrives
@@ -27,34 +26,47 @@ bool IPCClient::setup()
 {
     printf("Starting socket\n");
 
-    data_socket = PosixSocket::create_af_unix_socket(&name, sizeof(name));
-    if(data_socket == -!)
+    data_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
+    if(data_socket == -1)
     {
+        perror("Socket creation failed");
         return false;
     }
 
-    if(PosixSocket::set_non_blocking(data_socket) &&
-        !PosixSocket::connect(data_socket, name, sizeof(name)))
+    if( SocketImplementation::set_non_blocking(data_socket) == -1)
     {
+        perror("non blocking failure");
+        return false;
+    }
+
+    if( SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)) == -1)
+    {
+        perror("non blocking or connect failure");
         return false;
     }
 
     printf("waiting for write of client_init [%d] %s \n", __LINE__, __FILE__);
 
     char hello[] = "client_init\0";
-    PosixSocket::write(data_socket, hello, sizeof(hello));
+    SocketImplementation::send(data_socket, hello, sizeof(hello));
 
 	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
-
-	OK = PosixSocket::recv(data_socket, buffer, BufferSize);
+    size_t bufferSize = 0;
+	int OK = SocketImplementation::recv(data_socket, buffer, bufferSize);
 	if(OK == -1)
 	{
 		perror("read client socket");
-        CLOSE_SOCKET(data_socket);
+        SocketImplementation::close(data_socket);
 		return false;
 	}
 
-	if(strncmp(hello, buffer, BufferSize) != 0)
+    if(bufferSize <= 0)
+    {
+        printf("wrong buffer size");
+        return false;
+    }
+
+	if(strncmp(hello, buffer, bufferSize) != 0)
 	{
         printf("[%d] %s client buffer:\n %s\n %s\n",
                __LINE__,
@@ -62,7 +74,7 @@ bool IPCClient::setup()
                hello,
                buffer);
 		perror("comparison buffer result wrong client\n");
-        CLOSE_SOCKET(data_socket);
+        SocketImplementation::close(data_socket);
 		return false;
 	}
 
@@ -71,42 +83,23 @@ bool IPCClient::setup()
 
 bool IPCClient::setup_one_shot( const char *str, int n ) {
 	printf("Starting socket\n");
-	// Hello world MacOS return point. ;)
-	data_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-	if(data_socket == -1) {
-		perror("client socket");
-		return false;
-	}
 
-	if(!set_non_blocking(data_socket))
-	{
-		return false;
-	}
+    data_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
+    if(data_socket == -1)
+    {
+        perror("Socket creation failed");
+        return false;
+    }
 
-	printf("configuring socket type and path\n");
-	/* Ensure portable by resetting all to zero */
-	memset(&name, 0, sizeof(name));
-
-	/* AF_UNIX */
-	name.sun_family = AF_UNIX;
-	strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
-	printf("waiting for connection\n");
-	int OK = connect(data_socket, (const struct sockaddr *) &name, sizeof(name));
-	if (OK == -1) {
-		perror("client connect");
-		return false;
-	}
-	else
-	{
-		printf("Connected to server");
-	}
+    if(!SocketImplementation::set_non_blocking(data_socket) &&
+        !SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)))
+    {
+        perror("non blocking or connect failure");
+        return false;
+    }
 
 	{
-		struct pollfd pfd;
-		pfd.fd = data_socket;
-		pfd.events = POLLIN | POLLOUT;
-		pfd.revents = 0;
-		int ret = poll(&pfd, 1, 0);
+        int ret = SocketImplementation::poll(data_socket);
 
 		if(ret == -1)
 		{
@@ -120,25 +113,25 @@ bool IPCClient::setup_one_shot( const char *str, int n ) {
 		}
 	}
 
-
 	printf("waiting for write of client_init [%d] %s \n", __LINE__, __FILE__);
 
-	OK = write(data_socket, str, n);
+	int OK = SocketImplementation::send(data_socket, str, n);
 	if(OK == -1)
 	{
 		perror("cant send message");
-        CLOSE_SOCKET(data_socket);
+        SocketImplementation::close(data_socket);
 		return false;
 	}
 
 	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
 
 	/* Non blocking */
-	OK = recv(data_socket, buffer, BufferSize);
-	if(OK == -1 || OK == EWOULDBLOCK || OK == O_NONBLOCK)
+    size_t bufferSize = 0;
+	OK = SocketImplementation::recv(data_socket, buffer, bufferSize);
+	if(OK == -1)
 	{
 		perror("read client socket");
-        CLOSE_SOCKET(data_socket);
+        SocketImplementation::close(data_socket);
 		return false;
 	}
 
@@ -146,11 +139,11 @@ bool IPCClient::setup_one_shot( const char *str, int n ) {
 	if(strncmp(str, buffer, BufferSize) != 0)
 	{
 		perror("comparison buffer result wrong client");
-        CLOSE_SOCKET(data_socket);
+        SocketImplementation::close(data_socket);
 		return false;
 	}
 
-    CLOSE_SOCKET(data_socket);
+    SocketImplementation::close(data_socket);
 
 	return true;
 }
@@ -158,7 +151,7 @@ bool IPCClient::setup_one_shot( const char *str, int n ) {
 void IPCClient::send_message( const char * str, int n )
 {
 	char hello[] = "client_some_message\0";
-	int OK = write(data_socket, hello, sizeof(hello) );
+	int OK = SocketImplementation::send(data_socket, hello, sizeof(hello) );
 	if(OK == -1)
 	{
 		perror("write");
@@ -182,41 +175,36 @@ bool IPCClient::poll_update()
 
 bool IPCServer::setup()
 {
-    unlink(SOCKET_NAME);
+    SocketImplementation::unlink(SOCKET_NAME);
+
     printf("Setting up server connection socket\n");
-    // Hello world MacOS return point. ;)
-    connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-    if(connection_socket == -1) {
-        perror("socket");
+    connection_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
+    if(connection_socket == -1)
+    {
+        perror("Socket creation failed");
         return false;
     }
 
-    /* Ensure portable by resetting all to zero */
-    memset(&name, 0, sizeof(name));
-
-    /* AF_UNIX */
-    name.sun_family = AF_UNIX;
-
-    strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
-
-    if(!set_non_blocking(connection_socket))
+    if(SocketImplementation::set_non_blocking(connection_socket) == -1)
     {
+        perror("non blocking or connect failure");
         return false;
     }
 
     printf("trying to bind connection\n");
-    int OK = bind(connection_socket, (const struct sockaddr *) &name, sizeof(name));
+    int OK = SocketImplementation::bind(connection_socket, (const struct sockaddr *) &name, sizeof(name));
     if (OK == -1) {
         perror("bind");
         return false;
     }
 
     printf("Starting listen logic\n");
-    OK = listen(connection_socket, 8); // assume spamming of new connections
+    OK = SocketImplementation::listen(connection_socket, 8); // assume spamming of new connections
     if (OK == -1) {
         perror("listen");
         return false;
     }
+    // TODO move to init code ?
 #if defined(SO_NOSIGPIPE)
 	// Disable SIGPIPE (should only be relevant to stream sockets, but seems to affect UDP too on iOS)
 	int par = 1;
@@ -233,7 +221,7 @@ bool IPCServer::setup()
 bool IPCServer::poll_update()
 {
 	{
-        int ret = PosixSocket::poll(connection_socket);
+        int ret = SocketImplementation::poll(connection_socket);
 		if(ret == -1) {
 			perror("poll error");
 			return false;
@@ -244,9 +232,11 @@ bool IPCServer::poll_update()
 
 	struct sockaddr_storage their_addr;
 	socklen_t size = sizeof(their_addr);
-	data_socket = PosixSocket::accept(connection_socket, (struct sockaddr *)&their_addr, &size);
+	data_socket = SocketImplementation::accept(connection_socket, (struct sockaddr *)&their_addr, &size);
 
     // both are checked for portability to all OS's.
+
+    // TODO: can we hide this?
     if(data_socket == EWOULDBLOCK || data_socket == EAGAIN) {
         return true; // not an error
     } else if (data_socket == -1) {
@@ -256,13 +246,14 @@ bool IPCServer::poll_update()
         printf("Server accepted connection\n");
     }
 
-    if(!set_non_blocking(data_socket))
+    if(!SocketImplementation::set_non_blocking(data_socket))
     {
         return false;
     }
 //
     /* end server only. */
-    int OK = read(data_socket, buffer, BufferSize);
+    size_t bufferSize = 0;
+    int OK = SocketImplementation::recv(data_socket, buffer, bufferSize);
     if (OK == -1) {
         perror("server read");
         return false;
@@ -275,11 +266,11 @@ bool IPCServer::poll_update()
     /* Buffer must be null terminated */
     buffer[BufferSize - 1] = 0;
 
-    OK = write(data_socket, buffer, BufferSize);
+    OK = SocketImplementation::send(data_socket, buffer, bufferSize);
     if(OK == -1)
     {
         perror("cant send message");
-        CLOSE_SOCKET(data_socket);
+        SocketImplementation::close(data_socket);
         return false;
     }
 
@@ -289,7 +280,8 @@ bool IPCServer::poll_update()
         activeCallback(buffer, strlen(buffer));
     }
 
-    CLOSE_SOCKET(data_socket);
+    SocketImplementation::close(data_socket);
+    SocketImplementation::unlink(SOCKET_NAME);
 
     return true;
 }
