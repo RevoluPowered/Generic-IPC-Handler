@@ -22,7 +22,7 @@ struct SocketImplementation
     static int set_non_blocking( int socket_handle );
     static int connect( int socket_handle, const struct sockaddr *address, socklen_t address_len );
     static int send( int socket_handle, const char * msg, size_t len);
-    static int recv( int socket_handle, char * buffer, size_t &len );
+    static int recv( int socket_handle, char * buffer, size_t bufferSize );
     static int poll( int socket_handle );
     static int accept( int socket_handle, struct sockaddr *addr, socklen_t * addrlen);
     static int bind( int socket_handle, const struct sockaddr *addr, size_t len);

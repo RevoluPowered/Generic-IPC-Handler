@@ -51,22 +51,15 @@ bool IPCClient::setup()
     SocketImplementation::send(data_socket, hello, sizeof(hello));
 
 	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
-    size_t bufferSize = 0;
-	int OK = SocketImplementation::recv(data_socket, buffer, bufferSize);
-	if(OK == -1)
+	int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
+	if(len == -1)
 	{
 		perror("read client socket");
         SocketImplementation::close(data_socket);
 		return false;
 	}
 
-    if(bufferSize <= 0)
-    {
-        printf("wrong buffer size");
-        return false;
-    }
-
-	if(strncmp(hello, buffer, bufferSize) != 0)
+	if(strncmp(hello, buffer, BufferSize) != 0)
 	{
         printf("[%d] %s client buffer:\n %s\n %s\n",
                __LINE__,
@@ -91,10 +84,14 @@ bool IPCClient::setup_one_shot( const char *str, int n ) {
         return false;
     }
 
-    if(!SocketImplementation::set_non_blocking(data_socket) &&
-        !SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)))
+    if(SocketImplementation::set_non_blocking(data_socket) == -1)
     {
-        perror("non blocking or connect failure");
+        perror("blocking failure");
+        return false;
+    }
+    if(SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)) == -1)
+    {
+        perror("connect failure");
         return false;
     }
 
@@ -126,9 +123,8 @@ bool IPCClient::setup_one_shot( const char *str, int n ) {
 	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
 
 	/* Non blocking */
-    size_t bufferSize = 0;
-	OK = SocketImplementation::recv(data_socket, buffer, bufferSize);
-	if(OK == -1)
+	int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
+	if(len == -1)
 	{
 		perror("read client socket");
         SocketImplementation::close(data_socket);
@@ -136,7 +132,7 @@ bool IPCClient::setup_one_shot( const char *str, int n ) {
 	}
 
     buffer[BufferSize - 1] = 0;
-	if(strncmp(str, buffer, BufferSize) != 0)
+	if(strncmp(str, buffer, len) != 0)
 	{
 		perror("comparison buffer result wrong client");
         SocketImplementation::close(data_socket);
@@ -246,15 +242,15 @@ bool IPCServer::poll_update()
         printf("Server accepted connection\n");
     }
 
-    if(!SocketImplementation::set_non_blocking(data_socket))
+    if(SocketImplementation::set_non_blocking(data_socket) == -1)
     {
         return false;
     }
 //
     /* end server only. */
     size_t bufferSize = 0;
-    int OK = SocketImplementation::recv(data_socket, buffer, bufferSize);
-    if (OK == -1) {
+    int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
+    if (len == -1) {
         perror("server read");
         return false;
     }
@@ -266,7 +262,7 @@ bool IPCServer::poll_update()
     /* Buffer must be null terminated */
     buffer[BufferSize - 1] = 0;
 
-    OK = SocketImplementation::send(data_socket, buffer, bufferSize);
+    int OK = SocketImplementation::send(data_socket, buffer, len);
     if(OK == -1)
     {
         perror("cant send message");
@@ -281,7 +277,6 @@ bool IPCServer::poll_update()
     }
 
     SocketImplementation::close(data_socket);
-    SocketImplementation::unlink(SOCKET_NAME);
 
     return true;
 }

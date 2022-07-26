@@ -65,9 +65,9 @@ int SocketImplementation::send( int socket_handle, const char * msg, size_t len 
     return ::send(socket_handle, msg, len, MSG_DONTWAIT);
 }
 
-int SocketImplementation::recv( int socket_handle, char * buffer, size_t& len )
+int SocketImplementation::recv( int socket_handle, char * buffer, size_t bufferSize )
 {
-    return ::recv(socket_handle, buffer, len, MSG_DONTWAIT);
+    return ::recv(socket_handle, buffer, bufferSize, 0);
 }
 
 int SocketImplementation::accept(
