@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// danger will robinson danger
+InitializerMagic magic;
+
 void SocketImplementation::initialize()
 {
     WSADATA wsaData;
@@ -60,7 +63,7 @@ int SocketImplementation::connect( int socket_handle, const struct sockaddr *add
 }
 int SocketImplementation::send( int socket_handle, const char * msg, size_t len)
 {
-    return ::send(socket_handle, msg, len, 0) == SOCKET_ERROR ? -1 : 0;
+    return ::send(socket_handle, msg, len, 0);
 }
 int SocketImplementation::recv( int socket_handle, char * buffer, size_t bufferSize )
 {
@@ -68,13 +71,11 @@ int SocketImplementation::recv( int socket_handle, char * buffer, size_t bufferS
 }
 int SocketImplementation::poll( int socket_handle )
 {
-    return -1;
-//    struct pollfd pfd;
-//    pfd.fd = socket_handle;
-//    pfd.events = POLLIN | POLLOUT;
-//    pfd.revents = 0;
-//    return ::WSaPoll(&pfd, 1, 0);
-//    //return ::pollfd()
+    struct pollfd pfd;
+    pfd.fd = socket_handle;
+    pfd.events = POLLIN | POLLOUT;
+    pfd.revents = 0;
+    return ::WSAPoll(&pfd, 1, 0);
 }
 int SocketImplementation::accept( int socket_handle, struct sockaddr *addr, socklen_t * addrlen)
 {
@@ -96,11 +97,5 @@ void SocketImplementation::unlink( const char * unlink_file )
 {
     _unlink(unlink_file);
 }
-
-//static bool set_non_blocking( int socket_handle )
-//{
-//    unsigned long enable_non_blocking = 1;
-//    return ioctlsocket(fd, FIONBIO, &enable_non_blocking ) == 0;
-//}
 
 #endif

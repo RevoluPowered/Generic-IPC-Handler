@@ -2,8 +2,11 @@
 
 #include "socket_implementation.h"
 
-IPCBase::IPCBase(){}
-IPCBase::~IPCBase(){}
+IPCBase::IPCBase(){
+}
+IPCBase::~IPCBase(){
+
+}
 
 IPCClient::IPCClient(){}
 IPCClient::~IPCClient(){
@@ -41,7 +44,7 @@ bool IPCClient::setup()
 
     if( SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)) == -1)
     {
-        perror("non blocking or connect failure");
+        perror("connect failure");
         return false;
     }
 
@@ -89,6 +92,7 @@ bool IPCClient::setup_one_shot( const char *str, int n ) {
         perror("blocking failure");
         return false;
     }
+
     if(SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)) == -1)
     {
         perror("connect failure");
@@ -183,7 +187,7 @@ bool IPCServer::setup()
 
     if(SocketImplementation::set_non_blocking(connection_socket) == -1)
     {
-        perror("non blocking or connect failure");
+        perror("non blocking failure");
         return false;
     }
 

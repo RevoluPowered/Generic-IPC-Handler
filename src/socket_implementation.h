@@ -38,4 +38,21 @@ struct SocketImplementation
     static void unlink( const char * unlink_file );
 };
 
+/*
+ * Really because we shouldn't need to tell the OS to start and finalise but we do because Microsoft's
+ * API requires WSAStartup and Shutdown
+ */
+struct InitializerMagic
+{
+    InitializerMagic()
+    {
+        SocketImplementation::initialize();
+    }
+
+    ~InitializerMagic()
+    {
+        SocketImplementation::finalize();
+    }
+};
+
 #endif //GENERIC_IPC_HANDLER_SOCKET_IMPLEMENTATION_H
