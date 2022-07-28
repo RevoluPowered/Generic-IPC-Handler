@@ -12,6 +12,10 @@ InitializerMagic magic;
 
 void SocketImplementation::initialize()
 {
+    // prevent printf failing this is windows
+    setvbuf (stdout, NULL, _IONBF, 0);
+
+    // Initialise winsock
     WSADATA wsaData;
     int err = WSAStartup(MAKEWORD(2,2), &wsaData);
     if(err != 0)
@@ -54,6 +58,7 @@ int SocketImplementation::create_af_unix_socket(
 */
 int SocketImplementation::set_non_blocking( int socket_handle )
 {
+//    return 0;
     unsigned long enable_non_blocking = 1;
     return ioctlsocket(socket_handle, FIONBIO, &enable_non_blocking ) == 0;
 }
@@ -63,12 +68,71 @@ int SocketImplementation::connect( int socket_handle, const struct sockaddr *add
 }
 int SocketImplementation::send( int socket_handle, const char * msg, size_t len)
 {
-    return ::send(socket_handle, msg, len, 0);
+    struct pollfd pfd;
+    pfd.fd = socket_handle;
+    pfd.events = POLLWRNORM;
+
+    if(SocketImplementation::poll(&pfd) == -1 )
+    {
+        SocketImplementation::perror("poll waiting error");
+        return -1;
+    }
+    else if( pfd.revents & POLLWRNORM )
+    {
+        printf("waiting for write [%d] %s \n", __LINE__, __FILE__);
+
+        int OK = ::send(socket_handle, msg, len, 0);
+        if(OK == -1)
+        {
+            SocketImplementation::perror("cant send message");
+            SocketImplementation::close(socket_handle);
+            return -1;
+        }
+        else
+        {
+            return 0;
+        }
+
+    }
+
+    return 0;
 }
 int SocketImplementation::recv( int socket_handle, char * buffer, size_t bufferSize )
 {
-    return ::recv(socket_handle, buffer, bufferSize, 0);
+    struct pollfd pfd;
+    pfd.fd = socket_handle;
+    pfd.events = POLLRDNORM;
+
+    if(SocketImplementation::poll(&pfd) == -1 )
+    {
+        SocketImplementation::perror("poll read error");
+        return -1;
+    }
+    else if( pfd.revents & POLLRDNORM )
+    {
+        printf("waiting for recv [%d] %s \n", __LINE__, __FILE__);
+
+        int OK = ::recv(socket_handle, buffer, bufferSize, 0);
+        if(OK == -1)
+        {
+            SocketImplementation::perror("cant read message");
+            SocketImplementation::close(socket_handle);
+            return -1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    return 0;
 }
+
+int SocketImplementation::poll( struct pollfd * pfd, int timeout, int n )
+{
+    return ::WSAPoll(pfd, n, timeout);
+}
+
 int SocketImplementation::poll( int socket_handle )
 {
     struct pollfd pfd;
@@ -96,6 +160,27 @@ void SocketImplementation::close( int socket_handle )
 void SocketImplementation::unlink( const char * unlink_file )
 {
     _unlink(unlink_file);
+}
+
+void SocketImplementation::perror( const char * msg)
+{
+    LPVOID lpMsgBuf;
+    int e;
+
+    lpMsgBuf = (LPVOID)"Unknown error";
+    e = WSAGetLastError();
+    if (FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER |
+            FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL, e,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            // Default language
+            (LPTSTR)&lpMsgBuf, 0, NULL)) {
+        fprintf(stderr, "%s: Error %d: %s\n", msg, e, (char *)lpMsgBuf);
+        LocalFree(lpMsgBuf);
+    } else
+        fprintf(stderr, "%s: Error %d\n", msg, e);
 }
 
 #endif

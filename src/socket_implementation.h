@@ -31,11 +31,13 @@ struct SocketImplementation
     static int send( int socket_handle, const char * msg, size_t len);
     static int recv( int socket_handle, char * buffer, size_t bufferSize );
     static int poll( int socket_handle );
+    static int poll( struct pollfd * pfd, int timeout = 1, int n = 1 );
     static int accept( int socket_handle, struct sockaddr *addr, socklen_t * addrlen);
     static int bind( int socket_handle, const struct sockaddr *addr, size_t len);
     static int listen( int socket_handle, int connection_pool_size);
     static void close( int socket_handle );
     static void unlink( const char * unlink_file );
+    static void perror( const char * msg );
 };
 
 /*

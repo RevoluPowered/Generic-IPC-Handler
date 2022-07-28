@@ -32,144 +32,84 @@ bool IPCClient::setup()
     data_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
     if(data_socket == -1)
     {
-        perror("Socket creation failed");
+        SocketImplementation::perror("Socket creation failed");
         return false;
     }
 
     if( SocketImplementation::set_non_blocking(data_socket) == -1)
     {
-        perror("non blocking failure");
-        return false;
-    }
-
-    if( SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)) == -1)
-    {
-        perror("connect failure");
-        return false;
-    }
-
-    printf("waiting for write of client_init [%d] %s \n", __LINE__, __FILE__);
-
-    char hello[] = "client_init\0";
-    SocketImplementation::send(data_socket, hello, sizeof(hello));
-
-	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
-	int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
-	if(len == -1)
-	{
-		perror("read client socket");
-        SocketImplementation::close(data_socket);
-		return false;
-	}
-
-	if(strncmp(hello, buffer, BufferSize) != 0)
-	{
-        printf("[%d] %s client buffer:\n %s\n %s\n",
-               __LINE__,
-               __func__,
-               hello,
-               buffer);
-		perror("comparison buffer result wrong client\n");
-        SocketImplementation::close(data_socket);
-		return false;
-	}
-
-    return true;
-}
-
-bool IPCClient::setup_one_shot( const char *str, int n ) {
-	printf("Starting socket\n");
-
-    data_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
-    if(data_socket == -1)
-    {
-        perror("Socket creation failed");
-        return false;
-    }
-
-    if(SocketImplementation::set_non_blocking(data_socket) == -1)
-    {
-        perror("blocking failure");
+        SocketImplementation::perror("non blocking failure");
         return false;
     }
 
     if(SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)) == -1)
     {
+#ifdef _WIN32
+        if(WSAEWOULDBLOCK != WSAGetLastError())
+        {
+            SocketImplementation::perror("connect failure");
+            return false;
+        }
+#else
         perror("connect failure");
+        return false;
+#endif
+    }
+    // magic init string
+    const char str[] = "client_init\0";
+
+    int OK = SocketImplementation::send(data_socket, str, strlen(str));
+    if(OK == -1)
+    {
+        SocketImplementation::perror("cant send message");
+        SocketImplementation::close(data_socket);
         return false;
     }
 
-	{
-        int ret = SocketImplementation::poll(data_socket);
 
-		if(ret == -1)
-		{
-			perror("poll error");
-			return false;
-		} else if( ret == EAGAIN) {
-			return true; // would block
-		} else if( ret == 0)
-		{
-			return true; // we must exit, no connection and no error.
-		}
-	}
 
-	printf("waiting for write of client_init [%d] %s \n", __LINE__, __FILE__);
+    printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
 
-	int OK = SocketImplementation::send(data_socket, str, n);
-	if(OK == -1)
-	{
-		perror("cant send message");
+
+    /* Non blocking */
+    int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
+    if(len == -1)
+    {
+        SocketImplementation::perror("read client socket");
         SocketImplementation::close(data_socket);
-		return false;
-	}
-
-	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
-
-	/* Non blocking */
-	int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
-	if(len == -1)
-	{
-		perror("read client socket");
-        SocketImplementation::close(data_socket);
-		return false;
-	}
+        return false;
+    }
 
     buffer[BufferSize - 1] = 0;
-	if(strncmp(str, buffer, len) != 0)
-	{
-		perror("comparison buffer result wrong client");
+    if(strncmp(str, buffer, len) != 0)
+    {
+        perror("comparison buffer result wrong client");
         SocketImplementation::close(data_socket);
-		return false;
-	}
+        return false;
+    }
 
-    SocketImplementation::close(data_socket);
+    return true;
+}
 
-	return true;
+bool IPCClient::setup_one_shot( const char *str, int n ) {
+    if( IPCClient::setup() )
+    {
+        closesocket(data_socket);
+        return true;
+    }
+	return false;
 }
 
 void IPCClient::send_message( const char * str, int n )
 {
-	char hello[] = "client_some_message\0";
-	int OK = SocketImplementation::send(data_socket, hello, sizeof(hello) );
+	int OK = SocketImplementation::send(data_socket, str, n );
 	if(OK == -1)
 	{
-		perror("write");
+        SocketImplementation::perror("write");
 	}
 }
 
-bool IPCClient::poll_update()
-{
-//    // unlikely to be used as (right now) later if we need a backward pipe.
-//    const char str[] = "Hello World from the Client!\0";
-//
-//    int OK = write(data_socket, str, sizeof(str));
-//    if(OK == -1)
-//    {
-//       perror("write");
-//       return false;
-//    }
-
+bool IPCClient::poll_update() {
     return true;
 }
 
@@ -255,7 +195,7 @@ bool IPCServer::poll_update()
     size_t bufferSize = 0;
     int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
     if (len == -1) {
-        perror("server read");
+        SocketImplementation::perror("server read");
         return false;
     }
     else
@@ -269,7 +209,7 @@ bool IPCServer::poll_update()
     int OK = SocketImplementation::send(data_socket, buffer, len);
     if(OK == -1)
     {
-        perror("cant send message");
+        SocketImplementation::perror("cant send message");
         SocketImplementation::close(data_socket);
         return false;
     }
