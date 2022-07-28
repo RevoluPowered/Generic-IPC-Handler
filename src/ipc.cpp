@@ -51,7 +51,7 @@ bool IPCClient::setup()
             return false;
         }
 #else
-        perror("connect failure");
+        SocketImplementation::perror("connect failure");
         return false;
 #endif
     }
@@ -83,7 +83,7 @@ bool IPCClient::setup()
     buffer[BufferSize - 1] = 0;
     if(strncmp(str, buffer, len) != 0)
     {
-        perror("comparison buffer result wrong client");
+        SocketImplementation::perror("comparison buffer result wrong client");
         SocketImplementation::close(data_socket);
         return false;
     }
@@ -121,27 +121,27 @@ bool IPCServer::setup()
     connection_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
     if(connection_socket == -1)
     {
-        perror("Socket creation failed");
+        SocketImplementation::perror("Socket creation failed");
         return false;
     }
 
     if(SocketImplementation::set_non_blocking(connection_socket) == -1)
     {
-        perror("non blocking failure");
+        SocketImplementation::perror("non blocking failure");
         return false;
     }
 
     printf("trying to bind connection\n");
     int OK = SocketImplementation::bind(connection_socket, (const struct sockaddr *) &name, sizeof(name));
     if (OK == -1) {
-        perror("bind");
+        SocketImplementation::perror("bind");
         return false;
     }
 
     printf("Starting listen logic\n");
     OK = SocketImplementation::listen(connection_socket, 8); // assume spamming of new connections
     if (OK == -1) {
-        perror("listen");
+        SocketImplementation::perror("listen");
         return false;
     }
     // TODO move to init code ?
@@ -180,7 +180,7 @@ bool IPCServer::poll_update()
     if(data_socket == EWOULDBLOCK || data_socket == EAGAIN) {
         return true; // not an error
     } else if (data_socket == -1) {
-        perror("socket open failed");
+        SocketImplementation::perror("socket open failed");
         return false;
     } else {
         printf("Server accepted connection\n");
