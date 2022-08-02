@@ -3,7 +3,7 @@ project('file_socket','c', 'cpp',
 
 incdir = include_directories('src')
 compiler = meson.get_compiler('cpp')
-ws2dep = compiler.find_library('ws2_32', required : true)
+ws2dep = compiler.find_library('ws2_32', required : false)
 
 sources_serv = [
   'src/socket_windows.cpp',

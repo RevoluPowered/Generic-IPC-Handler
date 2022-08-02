@@ -47,6 +47,11 @@ int SocketImplementation::poll( int socket_handle )
     return ::poll(&pfd, 1, 0);
 }
 
+int SocketImplementation::poll( struct pollfd * pfd, int timeout, int n )
+{
+	return ::poll(pfd, n, timeout);
+}
+
 /* Why so many proxy functions?
  * Well cotton, the reason is WinSock API has a bunch of differences, so linux is basically just a passthrough of the
  * unix functionality.
@@ -63,7 +68,7 @@ int SocketImplementation::connect( int socket_handle, const struct sockaddr *add
 
 int SocketImplementation::send( int socket_handle, const char * msg, size_t len )
 {
-    return ::send(socket_handle, msg, len, MSG_DONTWAIT);
+    return ::send(socket_handle, msg, len, 0);
 }
 
 int SocketImplementation::recv( int socket_handle, char * buffer, size_t bufferSize )
@@ -95,6 +100,10 @@ void SocketImplementation::close(int socket_handle) {
 
 void SocketImplementation::unlink(const char *unlink_file) {
     ::unlink(unlink_file);
+}
+
+void SocketImplementation::perror(const char *err) {
+	::perror(err);
 }
 
 #endif

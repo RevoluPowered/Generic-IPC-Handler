@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -10,6 +11,21 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
+#else
+#include <sys/socket.h>
+#include <sys/un.h>
+#endif
+
+/* This is because when WERROR and all errors are enabled you get the warning
+ * error: duplicated 'if' condition and is better than disabling the error */
+#if EAGAIN == EWOULDBLOCK
+#define IPC_AGAIN(x) \
+x == EAGAIN
+#else
+#define IPC_AGAIN(x) \
+x == EAGAIN || x == EWOULDBLOCK
+#endif
+
 
 struct SocketImplementation
 {

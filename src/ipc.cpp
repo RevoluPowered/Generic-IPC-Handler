@@ -91,7 +91,7 @@ bool IPCClient::setup_one_shot( const char *str, int n )
 			return false;
 		}
 
-        closesocket(data_socket);
+		SocketImplementation::close(data_socket);
         return true;
     }
 	return false;
@@ -173,13 +173,15 @@ bool IPCServer::poll_update()
 
     // both are checked for portability to all OS's.
 
-    // TODO: can we hide this?
-    if(data_socket == EWOULDBLOCK || data_socket == EAGAIN) {
+    // EWOULDBLOCK & EAGAIN sometimes are the same
+	// this can produce a warning which is why I used two IF's for the same thing.
+	// example: error: logical 'or' of equal expressions [-Werror=logical-op]
+	if(IPC_AGAIN(data_socket)) {
         return true; // not an error
-    } else if (data_socket == -1) {
-        SocketImplementation::perror("socket open failed");
-        return false;
-    } else {
+	} else if (data_socket == -1) {
+		SocketImplementation::perror("socket open failed");
+		return false;
+	} else {
         printf("Server accepted connection\n");
     }
 
@@ -189,7 +191,6 @@ bool IPCServer::poll_update()
     }
 //
     /* end server only. */
-    size_t bufferSize = 0;
     int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
     if (len == -1) {
         SocketImplementation::perror("server read");
@@ -199,6 +200,12 @@ bool IPCServer::poll_update()
     {
         printf("socket read success\n");
     }
+
+	if(len == 0)
+	{
+		SocketImplementation::perror("len zero");
+		return false;
+	}
 
     /* Buffer must be null terminated */
     buffer[BufferSize - 1] = 0;
