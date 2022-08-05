@@ -1,19 +1,22 @@
 #include "ipc.h"
-#include <iostream>
-IPCBase::IPCBase(){}
-IPCBase::~IPCBase(){}
+
+#include "socket_implementation.h"
+
+IPCBase::IPCBase(){
+}
+IPCBase::~IPCBase(){
+
+}
 
 IPCClient::IPCClient(){}
 IPCClient::~IPCClient(){
-    close(data_socket);
+    SocketImplementation::close(data_socket);
 }
 
 IPCServer::IPCServer(){}
 IPCServer::~IPCServer(){
-    close(connection_socket);
-    unlink(SOCKET_NAME);
+    SocketImplementation::close(connection_socket);
 }
-
 
 // called to register the only callback for when data arrives
 void IPCBase::add_receive_callback( CallbackDefinition callback )
@@ -25,224 +28,172 @@ void IPCBase::add_receive_callback( CallbackDefinition callback )
 bool IPCClient::setup()
 {
     printf("Starting socket\n");
-    // Hello world MacOS return point. ;)
-    data_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-    if(data_socket == -1) {
-        perror("client socket");
-        return false;
-    }
 
-    int flags = fcntl(data_socket, F_GETFD );
-    int ret = fcntl(data_socket, F_SETFD, flags | O_NONBLOCK);
-    printf("state %d\n", ret);
-
-    printf("configuring socket type and path\n");
-    /* Ensure portable by resetting all to zero */
-    memset(&name, 0, sizeof(name));
-
-    /* AF_UNIX */
-    name.sun_family = AF_UNIX;
-    strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
-    printf("waiting for connection\n");
-    int OK = connect(data_socket, (const struct sockaddr *) &name, sizeof(name));
-    if (OK == -1) {
-        perror("client connect");
-        return false;
-    }
-    else
+    data_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
+    if(data_socket == -1)
     {
-        std::cout << "Connected to server" << std::endl;
-    }
-
-    printf("waiting for write of client_init [%d] %s \n", __LINE__, __FILE__);
-
-    char hello[] = "client_init\0";
-    OK = write(data_socket, hello, sizeof(hello));
-    if(OK == -1)
-    {
-        perror("cant send message");
+        SocketImplementation::perror("Socket creation failed");
         return false;
     }
 
-	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
+    if( SocketImplementation::set_non_blocking(data_socket) == -1)
+    {
+        SocketImplementation::perror("non blocking failure");
+        return false;
+    }
 
-	OK = read(data_socket, buffer, BufferSize);
-	if(OK == -1)
-	{
-		perror("read client socket");
-		close(data_socket);
-		return false;
-	}
-
-	if(strncmp(hello, buffer, BufferSize) != 0)
-	{
-        printf("[%d] %s client buffer:\n %s\n %s\n",
-               __LINE__,
-               __func__,
-               hello,
-               buffer);
-		perror("comparison buffer result wrong client\n");
-		close(data_socket);
-		return false;
-	}
+    if(SocketImplementation::connect(data_socket, (const struct sockaddr*) &name, sizeof(name)) == -1)
+    {
+#ifdef _WIN32
+        if(WSAEWOULDBLOCK != WSAGetLastError())
+        {
+            SocketImplementation::perror("connect failure");
+            return false;
+        }
+#else
+        SocketImplementation::perror("connect failure");
+        return false;
+#endif
+    }
 
     return true;
 }
 
-bool IPCClient::setup_one_shot( const char *str, int n ) {
-	printf("Starting socket\n");
-	// Hello world MacOS return point. ;)
-	data_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-	if(data_socket == -1) {
-		perror("client socket");
-		return false;
-	}
-
-    int flags = fcntl(data_socket, F_GETFD );
-    int ret = fcntl(data_socket, F_SETFD, flags | O_NONBLOCK);
-    printf("state %d\n", ret);
-
-	printf("configuring socket type and path\n");
-	/* Ensure portable by resetting all to zero */
-	memset(&name, 0, sizeof(name));
-
-	/* AF_UNIX */
-	name.sun_family = AF_UNIX;
-	strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
-	printf("waiting for connection\n");
-	int OK = connect(data_socket, (const struct sockaddr *) &name, sizeof(name));
-	if (OK == -1) {
-		perror("client connect");
-		return false;
-	}
-	else
+bool IPCClient::setup_one_shot( const char *str, int n )
+{
+	if( IPCClient::setup() )
 	{
-		printf("Connected to server");
-	}
+		// We must send the data to the client requested
+		int OK = SocketImplementation::send(data_socket, str, n);
+		if(OK == -1)
+		{
+			SocketImplementation::perror("cant send message");
+			SocketImplementation::close(data_socket);
+			return false;
+		}
 
-	printf("waiting for write of client_init [%d] %s \n", __LINE__, __FILE__);
+		printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
 
-	OK = write(data_socket, str, n);
-	if(OK == -1)
-	{
-		perror("cant send message");
-		close(data_socket);
-		return false;
-	}
+		/* Non blocking */
+		int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
+		if(len == -1)
+		{
+			SocketImplementation::perror("read client socket");
+			SocketImplementation::close(data_socket);
+			return false;
+		}
 
-	printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__ );
+		buffer[BufferSize - 1] = 0;
+		if(strncmp(str, buffer, len) != 0)
+		{
+			SocketImplementation::perror("comparison buffer result wrong client");
+			SocketImplementation::close(data_socket);
+			return false;
+		}
 
-	/* Non blocking */
-	OK = read(data_socket, buffer, BufferSize);
-	if(OK == -1 || OK == EWOULDBLOCK || OK == O_NONBLOCK)
-	{
-		perror("read client socket");
-		close(data_socket);
-		return false;
-	}
-
-    buffer[BufferSize - 1] = 0;
-	if(strncmp(str, buffer, BufferSize) != 0)
-	{
-		perror("comparison buffer result wrong client");
-		close(data_socket);
-		return false;
-	}
-
-	close(data_socket);
-
-	return true;
+		SocketImplementation::close(data_socket);
+        return true;
+    }
+	return false;
 }
 
 void IPCClient::send_message( const char * str, int n )
 {
-	char hello[] = "client_some_message\0";
-	int OK = write(data_socket, hello, sizeof(hello) );
+	int OK = SocketImplementation::send(data_socket, str, n );
 	if(OK == -1)
 	{
-		perror("write");
+        SocketImplementation::perror("write");
 	}
 }
 
-bool IPCClient::poll()
-{
-//    // unlikely to be used as (right now) later if we need a backward pipe.
-//    const char str[] = "Hello World from the Client!\0";
-//
-//    int OK = write(data_socket, str, sizeof(str));
-//    if(OK == -1)
-//    {
-//       perror("write");
-//       return false;
-//    }
-
+bool IPCClient::poll_update() {
     return true;
 }
 
 bool IPCServer::setup()
 {
-    unlink(SOCKET_NAME);
+    SocketImplementation::unlink(SOCKET_NAME);
+
     printf("Setting up server connection socket\n");
-    // Hello world MacOS return point. ;)
-    connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-    if(connection_socket == -1) {
-        perror("socket");
+    connection_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
+    if(connection_socket == -1)
+    {
+        SocketImplementation::perror("Socket creation failed");
         return false;
     }
 
-
-//    int flags = 1;
-//    ioctl(connection_socket, FIOBIO, &flags);
-    /* Ensure portable by resetting all to zero */
-    memset(&name, 0, sizeof(name));
-
-    /* AF_UNIX */
-    name.sun_family = AF_UNIX;
-
-    strncpy(name.sun_path, SOCKET_NAME, sizeof(name.sun_path) - 1);
+    if(SocketImplementation::set_non_blocking(connection_socket) == -1)
+    {
+        SocketImplementation::perror("non blocking failure");
+        return false;
+    }
 
     printf("trying to bind connection\n");
-    int OK = bind(connection_socket, (const struct sockaddr *) &name,sizeof(name));
+    int OK = SocketImplementation::bind(connection_socket, (const struct sockaddr *) &name, sizeof(name));
     if (OK == -1) {
-        perror("bind");
+        SocketImplementation::perror("bind");
         return false;
     }
-
-    int flags = fcntl(connection_socket, F_GETFD );
-    int ret = fcntl(connection_socket, F_SETFD, flags | O_NONBLOCK);
-    printf("state %d\n", ret);
 
     printf("Starting listen logic\n");
-    OK = listen(connection_socket, 8); // assume spamming of new connections
+    OK = SocketImplementation::listen(connection_socket, 8); // assume spamming of new connections
     if (OK == -1) {
-        perror("listen");
+        SocketImplementation::perror("listen");
         return false;
     }
+    // TODO move to init code ?
+#if defined(SO_NOSIGPIPE)
+	// Disable SIGPIPE (should only be relevant to stream sockets, but seems to affect UDP too on iOS)
+	int par = 1;
+	if (setsockopt(connection_socket, SOL_SOCKET, SO_NOSIGPIPE, &par, sizeof(int)) != 0) {
+		printf("Unable to turn off SIGPIPE on socket");
+	}
+#endif
 
     printf("started listening for new connections\n");
     return true;
 }
 
 /* We process and read the buffer once per tick */
-bool IPCServer::poll()
+bool IPCServer::poll_update()
 {
-    // server only
-    data_socket = accept(connection_socket, NULL, NULL);
+	{
+        int ret = SocketImplementation::poll(connection_socket);
+		if(ret == -1) {
+			perror("poll error");
+			return false;
+		} else if( ret == EAGAIN || ret == 0) {
+            return true; // would block or no connections
+        }
+	}
+
+	struct sockaddr_storage their_addr;
+	socklen_t size = sizeof(their_addr);
+	data_socket = SocketImplementation::accept(connection_socket, (struct sockaddr *)&their_addr, &size);
 
     // both are checked for portability to all OS's.
-    if(data_socket == EWOULDBLOCK || data_socket == EAGAIN) {
+
+    // EWOULDBLOCK & EAGAIN sometimes are the same
+	// this can produce a warning which is why I used two IF's for the same thing.
+	// example: error: logical 'or' of equal expressions [-Werror=logical-op]
+	if(IPC_AGAIN(data_socket)) {
         return true; // not an error
-    } else if (data_socket == -1) {
-        perror("socket open failed");
-        return false;
-    } else {
+	} else if (data_socket == -1) {
+		SocketImplementation::perror("socket open failed");
+		return false;
+	} else {
         printf("Server accepted connection\n");
     }
 
+    if(SocketImplementation::set_non_blocking(data_socket) == -1)
+    {
+        return false;
+    }
+//
     /* end server only. */
-    int OK = read(data_socket, buffer, BufferSize);
-    if (OK == -1) {
-        perror("server read");
+    int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
+    if (len == -1) {
+        SocketImplementation::perror("server read");
         return false;
     }
     else
@@ -253,11 +204,11 @@ bool IPCServer::poll()
     /* Buffer must be null terminated */
     buffer[BufferSize - 1] = 0;
 
-    OK = write(data_socket, buffer, BufferSize);
+    int OK = SocketImplementation::send(data_socket, buffer, len);
     if(OK == -1)
     {
-        perror("cant send message");
-        close(data_socket);
+        SocketImplementation::perror("cant send message");
+        SocketImplementation::close(data_socket);
         return false;
     }
 
@@ -267,7 +218,7 @@ bool IPCServer::poll()
         activeCallback(buffer, strlen(buffer));
     }
 
-    close(data_socket);
+    SocketImplementation::close(data_socket);
 
     return true;
 }

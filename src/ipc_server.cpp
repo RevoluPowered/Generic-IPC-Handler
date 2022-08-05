@@ -14,7 +14,7 @@ int main() {
     if( server.setup() )
     {
         printf("Server setup completed, starting polling\n");
-        while( server.poll() ){
+        while( server.poll_update() ){
             // do nothing
         };
     }

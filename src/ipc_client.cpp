@@ -10,9 +10,10 @@ void Receive( const char * string, int strlen )
 int main() {
     IPCClient client;
     client.add_receive_callback(&Receive);
-    if(client.setup())
+    char hello[] = { "Hello World!\0"};
+    if(client.setup_one_shot(hello, strlen(hello)))
     {
-        client.poll();
+        client.poll_update();
     }
     return 0;
 }
