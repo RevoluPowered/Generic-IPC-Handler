@@ -201,12 +201,6 @@ bool IPCServer::poll_update()
         printf("socket read success\n");
     }
 
-	if(len == 0)
-	{
-		SocketImplementation::perror("len zero");
-		return false;
-	}
-
     /* Buffer must be null terminated */
     buffer[BufferSize - 1] = 0;
 

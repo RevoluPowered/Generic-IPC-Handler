@@ -68,7 +68,7 @@ int SocketImplementation::connect( int socket_handle, const struct sockaddr *add
 
 int SocketImplementation::send( int socket_handle, const char * msg, size_t len )
 {
-    return ::send(socket_handle, msg, len, 0);
+    return ::send(socket_handle, msg, len, MSG_DONTWAIT);
 }
 
 int SocketImplementation::recv( int socket_handle, char * buffer, size_t bufferSize )
