@@ -184,4 +184,8 @@ void SocketImplementation::perror( const char * msg)
         fprintf(stderr, "%s: Error %d\n", msg, e);
 }
 
+int SocketImplementation::get_socket_max_len() {
+    return sizeof(sockaddr_un::sun_path);
+}
+
 #endif

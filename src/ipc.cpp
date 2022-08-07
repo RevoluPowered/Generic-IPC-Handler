@@ -2,18 +2,15 @@
 
 #include "socket_implementation.h"
 
-IPCBase::IPCBase(){
-}
-IPCBase::~IPCBase(){
+IPCBase::IPCBase() {}
+IPCBase::~IPCBase(){}
 
-}
-
-IPCClient::IPCClient(){}
+IPCClient::IPCClient() : IPCBase() {}
 IPCClient::~IPCClient(){
     SocketImplementation::close(data_socket);
 }
 
-IPCServer::IPCServer(){}
+IPCServer::IPCServer() : IPCBase() {}
 IPCServer::~IPCServer(){
     SocketImplementation::close(connection_socket);
 }
@@ -25,11 +22,11 @@ void IPCBase::add_receive_callback( CallbackDefinition callback )
     activeCallback = callback;
 }
 
-bool IPCClient::setup()
+bool IPCClient::setup(const char * socket_path)
 {
     printf("Starting socket\n");
 
-    data_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
+    data_socket = SocketImplementation::create_af_unix_socket(name, socket_path);
     if(data_socket == -1)
     {
         SocketImplementation::perror("Socket creation failed");
@@ -59,9 +56,9 @@ bool IPCClient::setup()
     return true;
 }
 
-bool IPCClient::setup_one_shot( const char *str, int n )
+bool IPCClient::setup_one_shot( const char *socket_path, const char *str, int n )
 {
-	if( IPCClient::setup() )
+	if( IPCClient::setup(socket_path) )
 	{
 		// We must send the data to the client requested
 		int OK = SocketImplementation::send(data_socket, str, n);
@@ -110,12 +107,12 @@ bool IPCClient::poll_update() {
     return true;
 }
 
-bool IPCServer::setup()
+bool IPCServer::setup(const char * socket_path)
 {
-    SocketImplementation::unlink(SOCKET_NAME);
+    SocketImplementation::unlink(socket_path);
 
     printf("Setting up server connection socket\n");
-    connection_socket = SocketImplementation::create_af_unix_socket(name, SOCKET_NAME);
+    connection_socket = SocketImplementation::create_af_unix_socket(name, socket_path);
     if(connection_socket == -1)
     {
         SocketImplementation::perror("Socket creation failed");

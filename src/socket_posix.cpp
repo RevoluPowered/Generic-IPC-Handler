@@ -106,4 +106,8 @@ void SocketImplementation::perror(const char *err) {
 	::perror(err);
 }
 
+int SocketImplementation::get_socket_max_len() {
+    return sizeof(sockaddr_un::sun_path);
+}
+
 #endif
