@@ -54,6 +54,7 @@ struct SocketImplementation
     static void close( int socket_handle );
     static void unlink( const char * unlink_file );
     static void perror( const char * msg );
+    static int get_socket_max_len();
 };
 
 /*

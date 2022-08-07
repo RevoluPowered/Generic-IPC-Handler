@@ -16,7 +16,8 @@
 #include <sys/un.h>
 #endif // _WIN32
 
-/* Inter process communication system 
+
+/* Inter process communication system
  * - Platform agnostic using AF_UNIX sockets
  *   On Mac we must use DGRAM mode.
  *   We'd like to make this connectionless would be easier code wise.
@@ -24,15 +25,6 @@
 
 using CallbackDefinition = void (*)(const char * /* string data received */, int /*strlen */);
 #define BufferSize 256
-
-// TODO: this should be dynamic
-// Must be an OS specific temp directory
-// UNDER 108 char limit across all operating systems.
-#ifdef _WIN32
-#define SOCKET_NAME "c:/temp/som74yhe.socket"
-#else
-#define SOCKET_NAME "/tmp/som74yhe.socket"
-#endif
 
 class IPCBase 
 {
@@ -45,7 +37,7 @@ class IPCBase
     public:
     IPCBase();
     virtual ~IPCBase();
-	virtual bool setup() = 0; // setup is always different
+	virtual bool setup(const char * socket_path) = 0; // setup is always different
     virtual bool poll_update() = 0;
 	virtual void add_receive_callback( CallbackDefinition callback );
 };
@@ -55,8 +47,8 @@ class IPCClient : public IPCBase
 	public:
 	IPCClient();
 	virtual ~IPCClient();
-    bool setup();
-	bool setup_one_shot( const char *str, int n );
+    bool setup(const char * socket_path);
+	bool setup_one_shot( const char *socket_path, const char *str, int n );
     bool poll_update();
 	void send_message( const char * str, int n /* length */);
 };
@@ -68,7 +60,7 @@ class IPCServer : public IPCBase
     public:
     IPCServer();
     virtual ~IPCServer();
-    bool setup();
+    bool setup(const char * socket_path);
     bool poll_update();
 };
 
