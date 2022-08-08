@@ -22,6 +22,11 @@ jobs:
         run: |
           meson compile -v -C build
 
+      - name: list executables and files
+        working-directory: build/
+        run: |
+          ls -la
+
       - name: Run tests
         run: |
           ./build/ipc_test
