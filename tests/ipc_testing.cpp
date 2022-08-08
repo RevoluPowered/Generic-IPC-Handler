@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "doctest.h"
-#include "ipc.h"
+#include "thirdparty/doctest.h"
+#include "src/ipc.h"
 
 #define SOCKET_NAME "ipc_test.socket"
 
