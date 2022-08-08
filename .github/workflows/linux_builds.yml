@@ -19,13 +19,9 @@ jobs:
           meson setup build
 
       - name: Meson compile
-        run: |
-          meson compile -v -C build
-
-      - name: list executables and files
         working-directory: build/
         run: |
-          ls -la
+          ninja
 
       - name: Run tests
         run: |
