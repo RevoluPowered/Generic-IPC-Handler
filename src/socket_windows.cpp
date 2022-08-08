@@ -140,14 +140,11 @@ void SocketImplementation::perror(const char *msg) {
 
 	lpMsgBuf = (LPVOID) "Unknown error";
 	e = WSAGetLastError();
-	if (FormatMessage(
-				FORMAT_MESSAGE_ALLOCATE_BUFFER |
-						FORMAT_MESSAGE_FROM_SYSTEM |
-						FORMAT_MESSAGE_IGNORE_INSERTS,
-				NULL, e,
-				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				// Default language
-				(LPTSTR)&lpMsgBuf, 0, NULL)) {
+
+	const int bitmask = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+	int message = FormatMessage(bitmask, NULL, e, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+
+	if (message) {
 		fprintf(stderr, "%s: Error %d: %s\n", msg, e, (char *)lpMsgBuf);
 		LocalFree(lpMsgBuf);
 	} else
