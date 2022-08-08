@@ -9,21 +9,21 @@ sources_serv = [
   'src/socket_windows.cpp',
   'src/socket_posix.cpp',
   'src/ipc.cpp',
-  'src/ipc_server.cpp'
+  'src/tests/ipc_server.cpp'
 ]
 
 sources_client = [
   'src/socket_windows.cpp',
   'src/socket_posix.cpp',
   'src/ipc.cpp',
-  'src/ipc_client.cpp'
+  'src/tests/ipc_client.cpp'
 ]
 
 sources_testing = [
   'src/socket_windows.cpp',
   'src/socket_posix.cpp',
   'src/ipc.cpp',
-  'src/ipc_testing.cpp'
+  'src/tests/ipc_testing.cpp'
 ]
 
 executable('ipc_server', 

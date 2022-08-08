@@ -2,13 +2,10 @@
 #include "doctest.h"
 #include "ipc.h"
 
-#ifdef _WIN32
-#define SOCKET_NAME "c:/som74yhe.socket"
-#else
-#define SOCKET_NAME "/tmp/som74yhe.socket"
-#endif
+#define SOCKET_NAME "ipc_test.socket"
 
 #include <thread>
+using namespace std;
 
 atomic_bool keep_server_on, server_updated;
 void ServerThread()
