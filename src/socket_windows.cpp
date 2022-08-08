@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// danger will robinson danger
+// This is a global but will ensure initialiser constructor and destructor is called properly.
 InitializerMagic magic;
 
 void SocketImplementation::initialize() {
