@@ -19,14 +19,24 @@ sources_client = [
   'src/ipc_client.cpp'
 ]
 
+sources_testing = [
+  'src/socket_windows.cpp',
+  'src/socket_posix.cpp',
+  'src/ipc.cpp',
+  'src/ipc_testing.cpp'
+]
+
 executable('ipc_server', 
   sources_serv,
   include_directories: incdir,
   dependencies: ws2dep)
-
 
 executable('ipc_client', 
   sources_client,
   include_directories: incdir,
   dependencies: ws2dep)
 
+executable('ipc_test',
+  sources_testing,
+  include_directories: incdir,
+  dependencies: ws2dep)
