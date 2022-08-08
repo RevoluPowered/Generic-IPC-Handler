@@ -1,0 +1,27 @@
+name: 🐧 Linux Builds
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    name: Meson compile and test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq meson
+
+      - name: Meson setup
+        run: |
+          meson setup build
+
+      - name: Meson compile
+        run: |
+          meson compile -v -C build
+
+      - name: Run tests
+        run: |
+          ./build/ipc_test
