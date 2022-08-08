@@ -5,20 +5,6 @@ Initially this was started when I was trialing AF_UNIX sockets, but turned into 
 
 it works on Mac/Windows and Linux, see src/tests/ for some example code.
 
-# API notes
-```cpp
-IPCClient.setup_one_shot() // closes immediately
-IPCClient.setup() // stays open
-```
-
-# To send data use 
-```cpp
-SocketImplementation::send / recv
-```
-
-Buffer is limited to 256 this will be removed later.
-
-
 # Example
 ```cpp
 #include "ipc.h"
@@ -41,4 +27,20 @@ int main() {
     return 0;
 }
 ```
+
+
+# API notes
+```cpp
+IPCClient.setup_one_shot() // closes immediately
+IPCClient.setup() // stays open
+```
+
+# To send data when you aren't using one shot 
+```cpp
+SocketImplementation::send / recv
+```
+
+This will change in future
+
+Buffer is limited to 256 this will be removed later.
 
