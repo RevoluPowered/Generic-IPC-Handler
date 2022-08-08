@@ -26,12 +26,12 @@ sources_testing = [
   'tests/ipc_testing.cpp'
 ]
 
-executable('ipc_server', 
+executable('ipc_server',
   sources_serv,
   include_directories: incdir,
   dependencies: ws2dep)
 
-executable('ipc_client', 
+executable('ipc_client',
   sources_client,
   include_directories: incdir,
   dependencies: ws2dep)
