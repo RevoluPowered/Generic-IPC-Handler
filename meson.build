@@ -4,6 +4,7 @@ project('file_socket', 'c', 'cpp',
 incdir = include_directories('src')
 compiler = meson.get_compiler('cpp')
 ws2dep = compiler.find_library('ws2_32', required: false)
+thread_dep = dependency('threads')
 
 sources_serv = [
   'src/socket_windows.cpp',
@@ -39,4 +40,4 @@ executable('ipc_client',
 executable('ipc_test',
   sources_testing,
   include_directories: incdir,
-  dependencies: ws2dep)
+  dependencies: [ws2dep, thread_dep])
