@@ -1,5 +1,5 @@
 # Generic-IPC-Handler
-Trialing AF_UNIX sockets  (IPC) 
+Trialing AF_UNIX sockets  (IPC)
 
 Initially this was started when I was trialing AF_UNIX sockets, but turned into a cross platform tool for passing data from one app to another.
 
@@ -35,7 +35,7 @@ IPCClient.setup_one_shot() // closes immediately
 IPCClient.setup() // stays open
 ```
 
-# To send data when you aren't using one shot 
+# To send data when you aren't using one shot
 ```cpp
 SocketImplementation::send / recv
 ```

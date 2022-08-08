@@ -1,4 +1,4 @@
-#include "ipc.h"
+#include "src/ipc.h"
 
 #define SOCKET_NAME "ipc_test.socket"
 
