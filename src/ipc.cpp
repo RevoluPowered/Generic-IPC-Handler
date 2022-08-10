@@ -51,10 +51,10 @@ bool IPCClient::setup(const char *socket_path) {
 	return true;
 }
 
-bool IPCClient::setup_one_shot(const char *socket_path, const char *str, int n) {
+bool IPCClient::setup_one_shot(const char *socket_path, const char *str, size_t length) {
 	if (IPCClient::setup(socket_path)) {
 		// We must send the data to the client requested
-		int OK = SocketImplementation::send(data_socket, str, n);
+		int OK = SocketImplementation::send(data_socket, str, length);
 		if (OK == -1) {
 			SocketImplementation::perror("cant send message");
 			SocketImplementation::close(data_socket);

@@ -44,3 +44,10 @@ This will change in future
 
 Buffer is limited to 256 this will be removed later.
 
+# Compile and run tests
+
+You can compile this repo to run tests with Meson.
+
+* Run `meson setup build; cd build; ninja`
+
+Then the test executable will be located at `build/ipc_tests`

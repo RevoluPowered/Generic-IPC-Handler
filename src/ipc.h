@@ -7,10 +7,14 @@
 #include <string.h>
 
 #ifdef _WIN32
-#include <afunix.h>
-#include <mswsock.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+// The winsock files above must be included first.
+#include <afunix.h>
+#include <mswsock.h>
+// Windows badly defines a lot of stuff. Undefine it.
+#undef max // Conflicts with std::max
+#undef min // Conflicts with std::min
 #else
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -22,7 +26,7 @@
  *   We'd like to make this connectionless would be easier code wise.
  */
 
-using CallbackDefinition = void (*)(const char * /* string data received */, int /*strlen */);
+using CallbackDefinition = void (*)(const char * /* string data received */, size_t /* strlen */);
 #define BufferSize 256
 
 class IPCBase {
@@ -46,7 +50,7 @@ public:
 	IPCClient();
 	virtual ~IPCClient();
 	bool setup(const char *socket_path);
-	bool setup_one_shot(const char *socket_path, const char *str, int n);
+	bool setup_one_shot(const char *socket_path, const char *str, size_t length);
 	bool poll_update();
 	void send_message(const char *str, int n /* length */);
 };
