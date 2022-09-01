@@ -3,7 +3,7 @@
 #define SOCKET_NAME "ipc_test.socket"
 
 void Receive(const char *string, int strlen) {
-	printf("server got message: %s\n", string);
+	printf("server got message: %s length %d\n", string, strlen);
 }
 
 int main() {

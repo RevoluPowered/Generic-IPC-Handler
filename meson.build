@@ -1,5 +1,5 @@
 project('file_socket', 'c', 'cpp',
-  default_options: ['c_std=c11', 'cpp_std=c++11', 'default_library=static'])
+  default_options: ['c_std=c11', 'cpp_std=c++11', 'default_library=static', 'warning_level=3', 'werror=true'])
 
 incdir = include_directories('src')
 compiler = meson.get_compiler('cpp')
@@ -26,6 +26,7 @@ sources_tests = [
   'src/ipc.cpp',
   'tests/ipc_tests.cpp'
 ]
+
 
 executable('ipc_server',
   sources_serv,
