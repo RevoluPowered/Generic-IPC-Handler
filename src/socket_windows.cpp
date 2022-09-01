@@ -65,7 +65,7 @@ int SocketImplementation::send(int socket_handle, const char *msg, size_t len) {
 	pfd.fd = socket_handle;
 	pfd.events = POLLWRNORM;
 
-	if (SocketImplementation::poll(&pfd) == -1) {
+	if (SocketImplementation::poll(&pfd, 100) == -1) {
 		SocketImplementation::perror("poll waiting error");
 		return -1;
 	} else if (pfd.revents & POLLWRNORM) {
