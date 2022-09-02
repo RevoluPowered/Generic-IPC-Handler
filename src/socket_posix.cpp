@@ -63,7 +63,27 @@ int SocketImplementation::connect(int socket_handle, const struct sockaddr *addr
 }
 
 int SocketImplementation::send(int socket_handle, const char *msg, size_t len) {
-	return ::send(socket_handle, msg, len, MSG_DONTWAIT);
+	struct pollfd pfd;
+	pfd.fd = socket_handle;
+	pfd.events = POLLWRNORM;
+
+	if (SocketImplementation::poll(&pfd, 100) == -1) {
+		SocketImplementation::perror("poll read error");
+		return -1;
+	} else if (pfd.revents & POLLWRNORM) {
+		//printf("waiting for recv [%d] %s \n", __LINE__, __FILE__);
+
+		int OK = ::send(socket_handle, msg, len, MSG_DONTWAIT);
+		if (OK == -1) {
+			SocketImplementation::perror("cant read message");
+			SocketImplementation::close(socket_handle);
+			return -1;
+		} else {
+			return OK; /* must return the written count */
+		}
+	}
+
+	return 0;
 }
 
 int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSize) {
@@ -75,7 +95,7 @@ int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSiz
 		SocketImplementation::perror("poll read error");
 		return -1;
 	} else if (pfd.revents & POLLRDNORM) {
-		printf("waiting for recv [%d] %s \n", __LINE__, __FILE__);
+		//printf("waiting for recv [%d] %s \n", __LINE__, __FILE__);
 
 		int OK = ::recv(socket_handle, buffer, bufferSize, MSG_DONTWAIT);
 		if (OK == -1) {
@@ -83,7 +103,7 @@ int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSiz
 			SocketImplementation::close(socket_handle);
 			return -1;
 		} else {
-			return 0;
+			return OK; /* must return OK as it's the byte count */
 		}
 	}
 

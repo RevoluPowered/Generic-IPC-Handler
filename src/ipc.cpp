@@ -1,5 +1,4 @@
 #include "ipc.h"
-
 #include "socket_implementation.h"
 
 IPCBase::IPCBase() {}
@@ -24,7 +23,7 @@ void IPCBase::add_receive_callback(CallbackDefinition callback) {
 }
 
 bool IPCClient::setup(const char *socket_path) {
-	printf("Starting socket\n");
+	//printf("Client Starting socket\n");
 
 	data_socket = SocketImplementation::create_af_unix_socket(name, socket_path);
 	if (data_socket == -1) {
@@ -62,7 +61,7 @@ bool IPCClient::setup_one_shot(const char *socket_path, const char *str, int n) 
 			return false;
 		}
 
-		printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__);
+		//printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__);
 
 		/* Non blocking */
 		int len = SocketImplementation::recv(data_socket, buffer, BufferSize);
@@ -73,7 +72,7 @@ bool IPCClient::setup_one_shot(const char *socket_path, const char *str, int n) 
 		}
 
 		buffer[BufferSize - 1] = 0;
-		if (strncmp(str, buffer, len) != 0) {
+		if (strncmp(str, buffer, strlen(str)) != 0) {
 			SocketImplementation::perror("comparison buffer result wrong client");
 			SocketImplementation::close(data_socket);
 			return false;
@@ -99,7 +98,7 @@ bool IPCClient::poll_update() {
 bool IPCServer::setup(const char *socket_path) {
 	SocketImplementation::unlink(socket_path);
 
-	printf("Setting up server connection socket\n");
+	//printf("Setting up server connection socket\n");
 	connection_socket = SocketImplementation::create_af_unix_socket(name, socket_path);
 	if (connection_socket == -1) {
 		SocketImplementation::perror("Socket creation failed");
@@ -111,14 +110,14 @@ bool IPCServer::setup(const char *socket_path) {
 		return false;
 	}
 
-	printf("trying to bind connection\n");
+	//printf("trying to bind connection\n");
 	int OK = SocketImplementation::bind(connection_socket, (const struct sockaddr *)&name, sizeof(name));
 	if (OK == -1) {
 		SocketImplementation::perror("bind");
 		return false;
 	}
 
-	printf("Starting listen logic\n");
+	//printf("Starting listen logic\n");
 	OK = SocketImplementation::listen(connection_socket, 8); // assume spamming of new connections
 	if (OK == -1) {
 		SocketImplementation::perror("listen");
@@ -133,7 +132,7 @@ bool IPCServer::setup(const char *socket_path) {
 	}
 #endif
 
-	printf("started listening for new connections\n");
+	//printf("started listening for new connections\n");
 	return true;
 }
 
@@ -153,6 +152,9 @@ bool IPCServer::poll_update() {
 	socklen_t size = sizeof(their_addr);
 	data_socket = SocketImplementation::accept(connection_socket, (struct sockaddr *)&their_addr, &size);
 
+	// Always start with a clean slate
+	memset(buffer, 0, BufferSize);
+
 	// both are checked for portability to all OS's.
 
 	// EWOULDBLOCK & EAGAIN sometimes are the same
@@ -164,7 +166,7 @@ bool IPCServer::poll_update() {
 		SocketImplementation::perror("socket open failed");
 		return false;
 	} else {
-		printf("Server accepted connection\n");
+		//printf("Server accepted connection\n");
 	}
 
 	if (SocketImplementation::set_non_blocking(data_socket) == -1) {
@@ -177,13 +179,17 @@ bool IPCServer::poll_update() {
 		SocketImplementation::perror("server read");
 		return false;
 	} else {
-		printf("socket read success\n");
+		//printf("socket read success\n");
+	}
+
+	if (len == 0 || strlen(buffer) != (size_t)len || len < 0) {
+		return false;
 	}
 
 	/* Buffer must be null terminated */
 	buffer[BufferSize - 1] = 0;
 
-	int OK = SocketImplementation::send(data_socket, buffer, len);
+	int OK = SocketImplementation::send(data_socket, buffer, strlen(buffer));
 	if (OK == -1) {
 		SocketImplementation::perror("cant send message");
 		SocketImplementation::close(data_socket);
@@ -191,7 +197,7 @@ bool IPCServer::poll_update() {
 	}
 
 	/* Pass data to the application hooked in */
-	printf("Received message from client: %s\n", buffer);
+	//printf("Received message from client: %s\n", buffer);
 	if (activeCallback) {
 		activeCallback(buffer, strlen(buffer));
 	}
