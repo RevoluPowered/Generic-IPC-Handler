@@ -14,8 +14,9 @@ void ServerThread() {
 	CHECK(server.setup(SOCKET_NAME));
 
 	bool poll_update;
-	while ((poll_update = server.poll_update()) && keep_server_on) {
-		CHECK(poll_update != -1);
+	while (keep_server_on) {
+		poll_update = server.poll_update();
+		CHECK(poll_update);
 		server_updated = true;
 		//printf("server update\n");
 	}
@@ -32,7 +33,7 @@ TEST_CASE("hello test") {
 	bool first = true;
 	while (!server_updated) {
 		if (first) {
-			printf("waiting for server\n");
+			//printf("waiting for server\n");
 			first = false;
 		}
 	}
@@ -46,7 +47,7 @@ TEST_CASE("varying delays sending test") {
 	keep_server_on = true;
 	server_updated = false;
 	// ensure failure
-	char hello[] = { "Hello World!\0" };
+
 	//CHECK(client.setup_one_shot(SOCKET_NAME, hello, strlen(hello) ) == false);
 
 	thread server(ServerThread);
@@ -59,7 +60,11 @@ TEST_CASE("varying delays sending test") {
 	}
 
 	for (int x = 0; x < 100000; x++) {
-		CHECK(client.setup_one_shot(SOCKET_NAME, hello, strlen(hello)) != -1);
+		char hello[256];
+		int n = sprintf(hello, "hello %d", x);
+		CHECK_GT(n, 0);
+		//char hello[] = "Hello World!" + x;
+		CHECK(client.setup_one_shot(SOCKET_NAME, hello, strlen(hello)));
 	}
 	keep_server_on = false;
 	server.join(); // wait for close

@@ -77,7 +77,7 @@ int SocketImplementation::send(int socket_handle, const char *msg, size_t len) {
 			SocketImplementation::close(socket_handle);
 			return -1;
 		} else {
-			return 0;
+			return OK;
 		}
 	}
 
@@ -100,7 +100,7 @@ int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSiz
 			SocketImplementation::close(socket_handle);
 			return -1;
 		} else {
-			return 0;
+			return OK;
 		}
 	}
 
