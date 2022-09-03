@@ -1,0 +1,31 @@
+name: 🗔 Windows Builds
+on: [push, pull_request]
+
+jobs:
+  build-linux-meson:
+    name: Meson compile and test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install meson
+        run: |
+          pip install meson
+      # make windows builds actually work - meson detects msvc incorrectly.
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Meson setup
+        run: |
+          meson setup build
+      - name: meson compile
+        working-directory: build/
+        run: |
+          meson compile
+
+      - name: Run tests
+        run: |
+          ./build/ipc_tests.exe
