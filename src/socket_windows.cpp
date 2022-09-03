@@ -1,7 +1,9 @@
 
 // I am still annoyed we need extra code for sockets on Microsoft Windows.
 #ifdef _WIN32
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif // _CRT_SECURE_NO_WARNINGS
 #include "socket_implementation.h"
 
 #include <afunix.h>
@@ -31,7 +33,7 @@ void SocketImplementation::finalize() {
 int SocketImplementation::create_af_unix_socket(
 		struct sockaddr_un &name,
 		const char *file_path) {
-	const int socket_id = socket(AF_UNIX, SOCK_STREAM, 0);
+	const int socket_id = (int)socket(AF_UNIX, SOCK_STREAM, 0);
 	if (socket_id == -1) {
 		perror("client socket");
 		return -1;
@@ -57,9 +59,11 @@ int SocketImplementation::set_non_blocking(int socket_handle) {
 	unsigned long enable_non_blocking = 1;
 	return ioctlsocket(socket_handle, FIONBIO, &enable_non_blocking) == 0;
 }
+
 int SocketImplementation::connect(int socket_handle, const struct sockaddr *address, socklen_t address_len) {
 	return ::connect(socket_handle, address, address_len);
 }
+
 int SocketImplementation::send(int socket_handle, const char *msg, size_t len) {
 	struct pollfd pfd;
 	pfd.fd = socket_handle;
@@ -71,7 +75,7 @@ int SocketImplementation::send(int socket_handle, const char *msg, size_t len) {
 	} else if (pfd.revents & POLLWRNORM) {
 		printf("waiting for write [%d] %s \n", __LINE__, __FILE__);
 
-		int OK = ::send(socket_handle, msg, len, 0);
+		int OK = ::send(socket_handle, msg, (int)len, 0);
 		if (OK == -1) {
 			SocketImplementation::perror("cant send message");
 			SocketImplementation::close(socket_handle);
@@ -80,9 +84,9 @@ int SocketImplementation::send(int socket_handle, const char *msg, size_t len) {
 			return OK;
 		}
 	}
-
 	return 0;
 }
+
 int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSize) {
 	struct pollfd pfd;
 	pfd.fd = socket_handle;
@@ -94,7 +98,7 @@ int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSiz
 	} else if (pfd.revents & POLLRDNORM) {
 		printf("waiting for recv [%d] %s \n", __LINE__, __FILE__);
 
-		int OK = ::recv(socket_handle, buffer, bufferSize, 0);
+		int OK = ::recv(socket_handle, buffer, (int)bufferSize, 0);
 		if (OK == -1) {
 			SocketImplementation::perror("cant read message");
 			SocketImplementation::close(socket_handle);
@@ -103,7 +107,6 @@ int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSiz
 			return OK;
 		}
 	}
-
 	return 0;
 }
 
@@ -118,18 +121,23 @@ int SocketImplementation::poll(int socket_handle) {
 	pfd.revents = 0;
 	return ::WSAPoll(&pfd, 1, 0);
 }
+
 int SocketImplementation::accept(int socket_handle, struct sockaddr *addr, socklen_t *addrlen) {
-	return ::accept(socket_handle, addr, addrlen);
+	return (int)::accept(socket_handle, addr, addrlen);
 }
+
 int SocketImplementation::bind(int socket_handle, const struct sockaddr *addr, size_t len) {
-	return ::bind(socket_handle, addr, len);
+	return ::bind(socket_handle, addr, (int)len);
 }
+
 int SocketImplementation::listen(int socket_handle, int connection_pool_size) {
 	return ::listen(socket_handle, connection_pool_size);
 }
+
 void SocketImplementation::close(int socket_handle) {
 	::closesocket(socket_handle);
 }
+
 void SocketImplementation::unlink(const char *unlink_file) {
 	_unlink(unlink_file);
 }
