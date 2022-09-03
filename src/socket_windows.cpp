@@ -33,8 +33,8 @@ void SocketImplementation::finalize() {
 int SocketImplementation::create_af_unix_socket(
 		struct sockaddr_un &name,
 		const char *file_path) {
-	const int socket_id = (int)socket(AF_UNIX, SOCK_STREAM, 0);
-	if (socket_id == -1) {
+	const SOCKET socket_id = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (socket_id == SOCKET_ERROR) {
 		perror("client socket");
 		return -1;
 	}
@@ -45,7 +45,7 @@ int SocketImplementation::create_af_unix_socket(
 	name.sun_family = AF_UNIX;
 	strncpy(name.sun_path, file_path, sizeof(name.sun_path) - 1);
 
-	return socket_id;
+	return (int)socket_id;
 }
 
 /*
@@ -73,7 +73,7 @@ int SocketImplementation::send(int socket_handle, const char *msg, size_t len) {
 		SocketImplementation::perror("poll waiting error");
 		return -1;
 	} else if (pfd.revents & POLLWRNORM) {
-		printf("waiting for write [%d] %s \n", __LINE__, __FILE__);
+		//printf("waiting for write [%d] %s \n", __LINE__, __FILE__);
 
 		int OK = ::send(socket_handle, msg, (int)len, 0);
 		if (OK == -1) {
@@ -92,13 +92,14 @@ int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSiz
 	pfd.fd = socket_handle;
 	pfd.events = POLLRDNORM;
 
-	if (SocketImplementation::poll(&pfd) == -1) {
+	if (SocketImplementation::poll(&pfd, 100) == -1) {
 		SocketImplementation::perror("poll read error");
 		return -1;
 	} else if (pfd.revents & POLLRDNORM) {
-		printf("waiting for recv [%d] %s \n", __LINE__, __FILE__);
+		//printf("waiting for recv [%d] %s \n", __LINE__, __FILE__);
 
 		int OK = ::recv(socket_handle, buffer, (int)bufferSize, 0);
+
 		if (OK == -1) {
 			SocketImplementation::perror("cant read message");
 			SocketImplementation::close(socket_handle);
@@ -107,6 +108,7 @@ int SocketImplementation::recv(int socket_handle, char *buffer, size_t bufferSiz
 			return OK;
 		}
 	}
+
 	return 0;
 }
 
@@ -139,7 +141,7 @@ void SocketImplementation::close(int socket_handle) {
 }
 
 void SocketImplementation::unlink(const char *unlink_file) {
-	_unlink(unlink_file);
+	DeleteFile(unlink_file);
 }
 
 void SocketImplementation::perror(const char *msg) {
