@@ -61,7 +61,7 @@ TEST_CASE("varying delays sending test") {
 
 	for (int x = 0; x < 100000; x++) {
 		char hello[256];
-		int n = sprintf(hello, "hello %d", x);
+		int n = snprintf(hello, 64, "hello %d", x);
 		CHECK_GT(n, 0);
 		//char hello[] = "Hello World!" + x;
 		CHECK(client.setup_one_shot(SOCKET_NAME, hello, strlen(hello)));

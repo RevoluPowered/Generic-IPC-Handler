@@ -25,6 +25,7 @@ void IPCBase::add_receive_callback(CallbackDefinition callback) {
 bool IPCClient::setup(const char *socket_path) {
 	//printf("Client Starting socket\n");
 
+
 	data_socket = SocketImplementation::create_af_unix_socket(name, socket_path);
 	if (data_socket == -1) {
 		SocketImplementation::perror("Socket creation failed");
@@ -61,6 +62,8 @@ bool IPCClient::setup_one_shot(const char *socket_path, const char *str, size_t 
 			return false;
 		}
 
+		// clean slate on boot.
+		memset(&buffer[0], 0, BufferSize);
 		//printf("Waiting for read of client_init [%d] %s\n", __LINE__, __FILE__);
 
 		/* Non blocking */
@@ -71,7 +74,14 @@ bool IPCClient::setup_one_shot(const char *socket_path, const char *str, size_t 
 			return false;
 		}
 
+		if(len == 0)
+		{
+			SocketImplementation::perror("read buffer is empty!");
+			return false;
+		}
+
 		buffer[BufferSize - 1] = 0;
+
 		if (strncmp(str, buffer, strlen(str)) != 0) {
 			SocketImplementation::perror("comparison buffer result wrong client");
 			SocketImplementation::close(data_socket);
@@ -153,7 +163,7 @@ bool IPCServer::poll_update() {
 	data_socket = SocketImplementation::accept(connection_socket, (struct sockaddr *)&their_addr, &size);
 
 	// Always start with a clean slate
-	memset(buffer, 0, BufferSize);
+	memset(&buffer[0], 0, BufferSize);
 
 	// both are checked for portability to all OS's.
 
@@ -183,6 +193,7 @@ bool IPCServer::poll_update() {
 	}
 
 	if (len == 0 || strlen(buffer) != (size_t)len || len < 0) {
+		SocketImplementation::perror("invalid buffer size");
 		return false;
 	}
 
